@@ -29,37 +29,41 @@ import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.context.AnalyticsContext
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConversions._
 
 class LearnHandler(riverSettings:RiverSettings,client:Client) extends ActionHandler(riverSettings,client) {
-
-  private val ANTECEDENT_FIELD:String = "antecedent"
-  private val CONSEQUENT_FIELD:String = "consequent"
-
-  private val CONFIDENCE_FIELD:String = "confidence"
-  private val SUPPORT_FIELD:String    = "support"
-    
-  private val RULES_FIELD:String     = "rules"
-  private val TIMESTAMP_FIELD:String = "timestamp"
-  private val UID_FIELD:String       = "uid"
     
   override def execute(service:String) {
+    /*
+     * Convert settings into request data thereby
+     * filtering those settings that have Strings
+     * as values
+     * 
+     */
+    val data = rootSettings.filter(kv => kv._2.isInstanceOf[String]).map(kv => {
+      
+      val (k,v) = kv
+      (k,v.asInstanceOf[String])
+      
+    }).toMap
     
     /*
      * Build service request and send to remote service
      */
-    val req = new ServiceRequest(service,"train",Map.empty[String,String])
+    val req = new ServiceRequest(service,"train",data)
     val response = AnalyticsContext.send(req).mapTo[ServiceResponse]
       
     response.onSuccess {
-        case result => {
-       }
+        case result => 
+          logger.info("Learning from \n " + Serializer.serializeRequest(req))
     }
     
     response.onFailure {
-        case result => {
-          
+        case throwable => {
+          logger.error("Learning failed due to: " + throwable.getMessage())
         }	 	      
 	}
     
   }
+  
 }

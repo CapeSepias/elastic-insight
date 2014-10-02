@@ -33,16 +33,22 @@ import scala.collection.JavaConversions._
 class AnalyticsRiver @Inject()(riverName: RiverName,settings: RiverSettings,client:Client,service:AnalyticsService) extends AbstractRiverComponent(riverName, settings) with River {
   
   /*
-   * The request initiates the detection of outliers,
-   * either by cluster analysis (KMeans) or by Markov
+   * The request initiates the building of decision 
+   * models by RF algorithm
    */
-  private val OUTLIERS = "outliers"
+  private val DECISION = "decision"
+  /*
+   * The request initiates the building of outliers 
+   * models, either by cluster analysis (KMeans) or 
+   * by Markov algorithm
+   */
+  private val OUTLIER = "outlier"
   /*
    * The request initiates the building of a rule-based
    * model, either through Top-K or Top-KNR association
    * rule mining
    */
-  private val RULES = "rules"
+  private val RULE = "rule"
   /*
    * The request initiates the building of a series-based
    * model, either through SPADE or TSR algorithm 
@@ -60,13 +66,19 @@ class AnalyticsRiver @Inject()(riverName: RiverName,settings: RiverSettings,clie
     
     action match {
       
-      case OUTLIERS => {
+      case DECISION => {
+        
+        learner.execute(action)
+        logger.info("River started decision making.")
+        
+      }
+      case OUTLIER => {
         
         learner.execute(action)
         logger.info("River started outlier detection.")
         
       }
-      case RULES => {
+      case RULE => {
         
         learner.execute(action)
         logger.info("River started rule discovery.")
@@ -89,7 +101,7 @@ class AnalyticsRiver @Inject()(riverName: RiverName,settings: RiverSettings,clie
   }
 
   override def close() {
-    logger.info("Close ARules River");
+    logger.info("Close Analytics River");
   }
   
 }

@@ -36,7 +36,7 @@ import de.kp.elastic.insight.exception.AnalyticsException
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
-class EventAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
+class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
 
   /*
    * Registration of the URL part that is responsible for indexing data
@@ -54,7 +54,7 @@ class EventAction @Inject()(settings:Settings,client:Client,controller:RestContr
   controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/feature", this)
   controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/feature", this)
   
-  private val featureHandler = null
+  private val featureHandler = new FeatureRequestHandler(settings,client)
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
@@ -73,7 +73,8 @@ class EventAction @Inject()(settings:Settings,client:Client,controller:RestContr
             
       } else if (hasFeature) {
         
-        // TODO
+        val chain = new RequestHandlerChain(Array[RequestHandler](featureHandler,createAcknowledgedHandler(request,channel)))
+        chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
       
       } else {
         throw new AnalyticsException("No event or feature provided.")            

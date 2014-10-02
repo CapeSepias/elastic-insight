@@ -30,7 +30,7 @@ import org.elasticsearch.rest.RestModule
 import org.elasticsearch.river.RiversModule
 
 import de.kp.elastic.insight.module.{AnalyticsModule,AnalyticsRiverModule}
-import de.kp.elastic.insight.rest.{EventAction,GetAction,StatusAction}
+import de.kp.elastic.insight.rest.{GetAction,StatusAction,TrackAction}
 import de.kp.elastic.insight.service.AnalyticsService
 
 class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
@@ -51,7 +51,7 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
       /*
        * Collect events or features
        */
-   	  module.addRestAction(classOf[EventAction])
+   	  module.addRestAction(classOf[TrackAction])
       /*
        * Retrieve result information from remote analytics service
        */

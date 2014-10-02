@@ -25,7 +25,9 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.Random
 
 import org.elasticsearch.client.Client
+
 import org.elasticsearch.action.index.IndexResponse
+import org.elasticsearch.action.index.IndexRequest.OpType
 
 import org.elasticsearch.common.logging.Loggers
 
@@ -36,22 +38,20 @@ import org.elasticsearch.common.xcontent.XContentFactory
 
 import org.elasticsearch.indices.IndexAlreadyExistsException
 
-import org.elasticsearch.action.index.IndexRequest.OpType
-
 import de.kp.elastic.insight.exception.AnalyticsException
 import de.kp.elastic.insight.utils.ListenerUtils
 
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-class EventRequestHandler(settings:Settings,client:Client) extends RequestHandler {
+class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHandler {
 
   val TIMESTAMP_FIELD:String = "timestamp"
 
   val SITE_FIELD:String = "site"
-  val USER_FIELD:String = "user"
+  val DATA_FIELD:String = "data"
 
-  val GROUP_FIELD:String = "group"
-  val ITEM_FIELD:String  = "item"
+  val NAME_FIELD:String = "name"
+  val VALU_FIELD:String = "value"
 
   private val DEFAULT_HEALTH_REQUEST_TIMEOUT:String = "30s"
   private val ERROR_LIST:String = "error.list"
@@ -71,49 +71,35 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
     val mapping = params.param("type")
 
     /*
-     * We evaluate that an event object is part of the request, and that this object
+     * We evaluate that a feature object is part of the request, and that this object
      * has all required field provided
      */
-    val event = requestMap.get("event") match {
+    val feature = requestMap.get("feature") match {
       
-      case None => throw new AnalyticsException("Event is null.")
-      case Some(event) => event.asInstanceOf[Map[String,Any]]
+      case None => throw new AnalyticsException("Feature is null.")
+      case Some(valu) => valu.asInstanceOf[Map[String,Any]]
     
     }
     
     /* site */
-    val site = event.get(SITE_FIELD) match {
+    val site = feature.get(SITE_FIELD) match {
       
       case None => throw new AnalyticsException("Field 'site' is not set.")
       case Some(valu) => valu
       
     }
-    /* user */
-    val user = event.get(USER_FIELD) match {
+    /* data */
+    val data = feature.get(DATA_FIELD) match {
       
-      case None => throw new AnalyticsException("Field 'user' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* group */
-    val group = event.get(GROUP_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'group' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* item */
-    val item = event.get(ITEM_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'item' is not set.")
+      case None => throw new AnalyticsException("Field 'data' is not set.")
       case Some(valu) => valu
       
     }
  
     try {
 
-      doEventCreation(params,listener,requestMap,paramMap,event,OpType.INDEX,chain)
-
+      doFeatureCreation(params,listener,requestMap,paramMap,feature,OpType.INDEX,chain)
+      
     } catch {
       case e:Exception => {
         
@@ -138,39 +124,39 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
     
   }
     
-  private def doEventCreation(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],event:Map[String,Any],opType:OpType,chain:RequestHandlerChain) {
+  private def doFeatureCreation(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],feature:Map[String,Any],opType:OpType,chain:RequestHandlerChain) {
    	
     val index = params.param("index")
     val mapping = params.param("type")
         
     val responseListener = new ListenerUtils.OnIndexResponseListener[IndexResponse]() {
       override def onResponse(response:IndexResponse) {
-	    chain.execute(params,listener,requestMap,paramMap)
+	    logger.info("")
       }      
     }
 		
 	val failureListener = new ListenerUtils.OnFailureListener() {
       override def onFailure(t:Throwable) {
-	                
-		val errorList = getErrorList(paramMap)
-	    if (errorList.size >= maxRetryCount) {
-	      listener.onError(t)
+	            
+		  val errorList = getErrorList(paramMap)
+	      if (errorList.size >= maxRetryCount) {
+	        listener.onError(t)
 	      
-	    } else {
+	      } else {
 	        
-	      sleep(t)
-	      errorList += t
+	        sleep(t)
+	        errorList += t
 	                    
-	      doIndexExists(params,listener,requestMap,paramMap,chain)
+	        doIndexExists(params,listener,requestMap,paramMap,chain)
 	      
-	    }
+	      }
 				
 	  }
 
 	}
         
     /* Update index operation */
-    client.prepareIndex(index, mapping).setSource(event).setRefresh(true).setOpType(opType)
+    client.prepareIndex(index, mapping).setSource(feature).setRefresh(true).setOpType(opType)
       .execute(ListenerUtils.onIndex(responseListener, failureListener))
     
   }
@@ -285,12 +271,7 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
       }
 
       /*
-       * Define mapping schema for index 'index' and 'type'; note, that
-       * we actually support the following common schema for rule and
-       * also series analysis: timestamp, site, user, group and item.
-       * 
-       * This schema is compliant to the actual transactional as well
-       * as sequence source in spark-arules and spark-fsm
+       * Define mapping schema for index 'index' and 'type'
        */
       val builder = XContentFactory.jsonBuilder()
                       .startObject()
@@ -308,22 +289,17 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
                             .field("index", "not_analyzed")
                           .endObject()
 
-                          /* user */
-                          .startObject(USER_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
+                          /* data */
+                          .startObject(DATA_FIELD)
+                            .startObject("properties")
+                              .startObject(NAME_FIELD)
+                                .field("type","string")
+                              .endObject()
+                              .startObject(VALU_FIELD)
+                                .field("type","string")
+                              .endObject()
+                            .endObject()
                           .endObject()//
-
-                          /* group */
-                          .startObject(GROUP_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
-                          .endObject()//
-
-                          /* item */
-                          .startObject(ITEM_FIELD)
-                            .field("type", "integer")
-                          .endObject()
 
                         .endObject() // properties
                       .endObject()   // mapping

@@ -58,4 +58,6 @@ object Serializer {
   def serializeRules(rules:Rules):String = write(rules)  
   def deserializeRules(rules:String):Rules = read[Rules](rules)
   
+  def serializeRequest(request:ServiceRequest):String = write(request)
+  
 }
