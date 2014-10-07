@@ -22,7 +22,7 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
-import java.util.Random
+import java.util.{Date,Random}
 
 import org.elasticsearch.client.Client
 
@@ -128,7 +128,30 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
    	
     val index = params.param("index")
     val mapping = params.param("type")
+
+    /*
+     * Source preparation: a feature is mapped as a flat map of (name,value) pairs; 
+     * actually String, Int, Double and Long types are supported. Note, that this
+     * format is compatible with feature processing in Decision & Outlier Service
+     */
+    val source = HashMap.empty[String,Any]
+    
+    val now = new Date()
+    
+    source += TIMESTAMP_FIELD -> now.getTime()    
+    source += SITE_FIELD -> feature(SITE_FIELD)
+
+    val records = feature("data").asInstanceOf[Map[String,Any]]
+    for (rec <- records) {
+      
+      val (name,valu) = rec
         
+      if (valu.isInstanceOf[String] || valu.isInstanceOf[Int] || valu.isInstanceOf[Double] || valu.isInstanceOf[Long]) {    
+        source += name -> valu      
+      } 
+      
+    }
+    
     val responseListener = new ListenerUtils.OnIndexResponseListener[IndexResponse]() {
       override def onResponse(response:IndexResponse) {
 	    logger.info("")
@@ -156,7 +179,7 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
 	}
         
     /* Update index operation */
-    client.prepareIndex(index, mapping).setSource(feature).setRefresh(true).setOpType(opType)
+    client.prepareIndex(index, mapping).setSource(source).setRefresh(true).setOpType(opType)
       .execute(ListenerUtils.onIndex(responseListener, failureListener))
     
   }
@@ -271,39 +294,65 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
       }
 
       /*
-       * Define mapping schema for index 'index' and 'type'
+       * Define mapping schema for index 'index' and 'type'; we have
+       * to extract the fields dynamically from the request data
        */
+      val feature = requestMap.get("feature").asInstanceOf[Map[String,Any]]
+      val records = feature("data").asInstanceOf[Map[String,Any]]
+      
       val builder = XContentFactory.jsonBuilder()
-                      .startObject()
-                      .startObject(mapping)
-                        .startObject("properties")
+      builder
+        .startObject()
+          .startObject(mapping)
+            .startObject("properties")
 
-                          /* timestamp */
-                          .startObject(TIMESTAMP_FIELD)
-                            .field("type", "long")
-                          .endObject()
+              /* timestamp */
+              .startObject(TIMESTAMP_FIELD)
+                .field("type", "long")
+              .endObject()
                     
-                          /* site */
-                          .startObject(SITE_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
-                          .endObject()
+              /* site */
+              .startObject(SITE_FIELD)
+                .field("type", "string")
+                .field("index", "not_analyzed")
+              .endObject()
 
-                          /* data */
-                          .startObject(DATA_FIELD)
-                            .startObject("properties")
-                              .startObject(NAME_FIELD)
-                                .field("type","string")
-                              .endObject()
-                              .startObject(VALU_FIELD)
-                                .field("type","string")
-                              .endObject()
-                            .endObject()
-                          .endObject()//
+      for (rec <- records) {
+        
+        val (name,valu) = rec
+        
+        if (valu.isInstanceOf[String]) {        
+          builder
+            .startObject(name)
+              .field("type","string")
+            .endObject()
+        
+        } else if (valu.isInstanceOf[Int]) {
+           builder
+            .startObject(name)
+              .field("type","integer")
+            .endObject()
+ 
+        } else if (valu.isInstanceOf[Double]) {
+           builder
+            .startObject(name)
+              .field("type","double")
+            .endObject()
+ 
+        } else if (valu.isInstanceOf[Long]) {
+           builder
+            .startObject(name)
+              .field("type","long")
+            .endObject()
+         
+        }
+     
+      }
 
-                        .endObject() // properties
-                      .endObject()   // mapping
-                    .endObject()
+      builder
+            .endObject() // properties
+          .endObject()   // mapping
+        .endObject()
 
       val mappingResponse = client.admin().indices().preparePutMapping(index).setType(mapping).setSource(builder)
                               .execute().actionGet()
