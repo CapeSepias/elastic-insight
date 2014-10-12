@@ -41,6 +41,9 @@ import org.elasticsearch.indices.IndexAlreadyExistsException
 import de.kp.elastic.insight.exception.AnalyticsException
 import de.kp.elastic.insight.utils.ListenerUtils
 
+import org.elasticsearch.client.Requests
+
+import scala.collection.JavaConversions._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
 class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHandler {
@@ -177,11 +180,25 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
 	  }
 
 	}
-        
+                
     /* Update index operation */
-    client.prepareIndex(index, mapping).setSource(source).setRefresh(true).setOpType(opType)
+    val content = XContentFactory.contentBuilder(Requests.INDEX_CONTENT_TYPE)
+    content.map(toJavaMap(source.toMap))
+
+    client.prepareIndex(index, mapping).setSource(content).setRefresh(true).setOpType(opType)
       .execute(ListenerUtils.onIndex(responseListener, failureListener))
     
+  }
+  
+  private def toJavaMap(map:Map[String,Any]):java.util.Map[String,Object] = {
+    
+    val jMap = new java.util.HashMap[String,Object]
+    for (entry <- map) {
+      jMap.put(entry._1, entry._2.asInstanceOf[Object])
+    }
+    
+    jMap
+  
   }
   
   private def doIndexExists(params:Params,listener:OnErrorListener,requestMap:Map[String,Any], paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
