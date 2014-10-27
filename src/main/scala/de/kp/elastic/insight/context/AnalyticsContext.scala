@@ -24,6 +24,9 @@ import de.kp.elastic.insight.model._
 import scala.concurrent.Future
 import scala.collection.mutable.HashMap
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 object AnalyticsContext {
 
  private val clientPool = HashMap.empty[String,RemoteClient]
@@ -31,13 +34,36 @@ object AnalyticsContext {
   def send(req:ServiceRequest):Future[Any] = {
    
     val service = req.service
-    if (clientPool.contains(service) == false) {
-      clientPool += service -> new RemoteClient(service)      
-    }
-   
-    val client = clientPool(service)
-    client.send(req)
+    /*
+     * Determine whether the service is registered and 
+     * return a failure response in case of an unknown
+     * service
+     */
+    val response = if (Services.isService(service)) {
  
- }
+      if (clientPool.contains(service) == false) {
+        clientPool += service -> new RemoteClient(service)      
+      }
+   
+      val client = clientPool(service)
+      client.send(req)
+       
+    } else {
+     
+      Future {
+      
+        val uid = req.data("uid")
+        val msg = String.format("""The services requested [%s] is unknown""",service)
+      
+        val data = Map("uid" -> uid, "message" -> msg)
+        new ServiceResponse(req.service,req.task,data,ResponseStatus.FAILURE)	
+      
+      }
+    
+    }
+
+    response
+    
+  }
  
 }
