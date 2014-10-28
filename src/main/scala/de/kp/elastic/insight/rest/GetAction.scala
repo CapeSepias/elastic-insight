@@ -26,6 +26,7 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
+import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.rest.RestStatus.OK
 
 import de.kp.elastic.insight.model._
@@ -39,14 +40,16 @@ import scala.collection.JavaConversions._
 
 class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings, client) {
   
-  controller.registerHandler(RestRequest.Method.GET,"/{index}/{type}/_analytics/{service}/{uid}/{concept}", this)
-  controller.registerHandler(RestRequest.Method.GET,"/{index}/_analytics/get/{service}/{uid}/{concept}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/{service}/{uid}/{concept}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/get/{service}/{uid}/{concept}", this)
 
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
+  
+      val params = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
       
-      val req = RequestBuilder.build(request.params)
+      val req = RequestBuilder.build(params)
       val response = AnalyticsContext.send(req).mapTo[ServiceResponse]
       
       response.onSuccess {

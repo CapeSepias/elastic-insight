@@ -26,15 +26,15 @@ import scala.collection.JavaConversions._
 
 object RequestBuilder {
 
-  def build(params:java.util.Map[String,String]):ServiceRequest = {
+  def build(params:Map[String,Any]):ServiceRequest = {
         
-    val service = params("service")
+    val service = params("service").asInstanceOf[String]
     if (Services.isService(service) == false) {
       throw new AnalyticsException("No <service> found.")
       
     }
 
-    val concept = params("concept")
+    val concept = params("concept").asInstanceOf[String]
     if (Concepts.isConcept(concept) == false) {
       throw new AnalyticsException("No <concept> found.")
     }
@@ -44,11 +44,120 @@ object RequestBuilder {
     /* Build request data */
     val data = HashMap.empty[String,String]
     
-    data += "uid" -> params("uid")
+    data += "uid" -> params("uid").asInstanceOf[String]
    
-    // TODO
+    service match {
+      
+      case Services.ASSOCIATION => {
+        /*
+         * Association analysis requires input parameters for 'follow' requests;
+         * the input either specifies antecedents for consequent retrieval or
+         * vice versa.
+         */
+        concept match {
+          
+          case Concepts.FOLLOWERS => {
+ 
+            if (params.contains("antecedent") == false && params.contains("consequent") == false) {
+              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
+            }
+            
+            if (params.contains("antecedent")) {
+              
+              val antecedent = params("antecedent").asInstanceOf[List[Int]]
+              data += "antecedent" -> antecedent.mkString(",")
+              
+            } else {
+              
+              val consequent = params("consequent").asInstanceOf[List[Int]]
+              data += "consequent" -> consequent.mkString(",")
+              
+            }
+            
+          }
+          
+        }
+         
+      }
+      case Services.CONTEXT => {
+         
+        if (params.contains("features") == false) {
+          throw new AnalyticsException("Not enough parameters to retrieve predictions.")                        
+        }
+        
+        val features = params("features").asInstanceOf[List[String]]
+        data += "features" -> features.mkString(",")
+       
+      }
+      case Services.DECISION => {
+        
+        if (params.contains("features") == false) {
+          throw new AnalyticsException("Not enough parameters to retrieve predictions.")                        
+        }
+        
+        val features = params("features").asInstanceOf[List[String]]
+        data += "features" -> features.mkString(",")
+
+      }
+      case Services.INTENT => {
+        /*
+         * Intent recognition does not require any input parameters; the analysis
+         * is performed on the data provided by the respective data sources
+         */
+      }
+      case Services.OUTLIER => {
+        /*
+         * Outlier detection does not require any input parameters; the analysis
+         * is performed on the data provided by the respective data sources
+         */
+      }
+      case Services.SERIES => {
+        /*
+         * Series analysis requires input parameters for 'follow' requests;
+         * the input either specifies antecedents for consequent retrieval 
+         * or vice versa.
+         */
+        concept match {
+          
+          case Concepts.FOLLOWERS => {
+ 
+            if (params.contains("antecedent") == false && params.contains("consequent") == false) {
+              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
+            }
+            
+            if (params.contains("antecedent")) {
+              
+              val antecedent = params("antecedent").asInstanceOf[List[Int]]
+              data += "antecedent" -> antecedent.mkString(",")
+              
+            } else {
+              
+              val consequent = params("consequent").asInstanceOf[List[Int]]
+              data += "consequent" -> consequent.mkString(",")
+              
+            }
+            
+          }
+          
+        }
+        
+      }
+      case Services.SIMILARITY => {
+        /*
+         * Similarity analysis does not require any input parameters; the analysis
+         * is performed on the data provided by the respective data sources
+         */
+      }
+      case Services.SOCIAL => {
+        /* not yet implemented */
+      }
+      case Services.TEXT => {
+         /* not yet implemented */       
+      }
     
-    null
+    }
+    
+    new ServiceRequest(service, task, data.toMap)
 
   }
 
