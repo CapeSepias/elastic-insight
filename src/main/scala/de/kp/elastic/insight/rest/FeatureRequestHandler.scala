@@ -39,6 +39,8 @@ import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.indices.IndexAlreadyExistsException
 
 import de.kp.elastic.insight.exception.AnalyticsException
+
+import de.kp.elastic.insight.track.{ElasticBuilderFactory => EBF}
 import de.kp.elastic.insight.utils.ListenerUtils
 
 import org.elasticsearch.client.Requests
@@ -46,15 +48,7 @@ import org.elasticsearch.client.Requests
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHandler {
-
-  val TIMESTAMP_FIELD:String = "timestamp"
-
-  val SITE_FIELD:String = "site"
-  val DATA_FIELD:String = "data"
-
-  val NAME_FIELD:String = "name"
-  val VALU_FIELD:String = "value"
+class FeatureRequestHandler(settings:Settings,client:Client,topic:String) extends RequestHandler {
 
   private val DEFAULT_HEALTH_REQUEST_TIMEOUT:String = "30s"
   private val ERROR_LIST:String = "error.list"
@@ -69,39 +63,10 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
  
   
   override def execute(params:Params,listener:OnErrorListener,requestMap:Map[String,Any], paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
-   	
-    val index = params.param("index")
-    val mapping = params.param("type")
-
-    /*
-     * We evaluate that a feature object is part of the request, and that this object
-     * has all required field provided
-     */
-    val feature = requestMap.get("feature") match {
-      
-      case None => throw new AnalyticsException("Feature is null.")
-      case Some(valu) => valu.asInstanceOf[Map[String,Any]]
-    
-    }
-    
-    /* site */
-    val site = feature.get(SITE_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'site' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* data */
-    val data = feature.get(DATA_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'data' is not set.")
-      case Some(valu) => valu
-      
-    }
  
     try {
 
-      doFeatureCreation(params,listener,requestMap,paramMap,feature,OpType.INDEX,chain)
+      writeFeature(params,listener,requestMap,paramMap,OpType.INDEX,chain)
       
     } catch {
       case e:Exception => {
@@ -127,33 +92,10 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
     
   }
     
-  private def doFeatureCreation(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],feature:Map[String,Any],opType:OpType,chain:RequestHandlerChain) {
+  private def writeFeature(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],opType:OpType,chain:RequestHandlerChain) {
    	
     val index = params.param("index")
     val mapping = params.param("type")
-
-    /*
-     * Source preparation: a feature is mapped as a flat map of (name,value) pairs; 
-     * actually String, Int, Double and Long types are supported. Note, that this
-     * format is compatible with feature processing in Decision & Outlier Service
-     */
-    val source = HashMap.empty[String,Any]
-    
-    val now = new Date()
-    
-    source += TIMESTAMP_FIELD -> now.getTime()    
-    source += SITE_FIELD -> feature(SITE_FIELD)
-
-    val records = feature("data").asInstanceOf[Map[String,Any]]
-    for (rec <- records) {
-      
-      val (name,valu) = rec
-        
-      if (valu.isInstanceOf[String] || valu.isInstanceOf[Int] || valu.isInstanceOf[Double] || valu.isInstanceOf[Long]) {    
-        source += name -> valu      
-      } 
-      
-    }
     
     val responseListener = new ListenerUtils.OnIndexResponseListener[IndexResponse]() {
       override def onResponse(response:IndexResponse) {
@@ -182,38 +124,35 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
 	}
                 
     /* Update index operation */
+    val feature = requestMap.get("feature") match {
+      
+      case None => throw new AnalyticsException("Feature is null.")
+      case Some(valu) => valu.asInstanceOf[Map[String,Any]]
+    
+    }
+
     val content = XContentFactory.contentBuilder(Requests.INDEX_CONTENT_TYPE)
-    content.map(toJavaMap(source.toMap))
+    content.map(EBF.getSource(topic,feature))
 
     client.prepareIndex(index, mapping).setSource(content).setRefresh(true).setOpType(opType)
       .execute(ListenerUtils.onIndex(responseListener, failureListener))
     
   }
   
-  private def toJavaMap(map:Map[String,Any]):java.util.Map[String,Object] = {
-    
-    val jMap = new java.util.HashMap[String,Object]
-    for (entry <- map) {
-      jMap.put(entry._1, entry._2.asInstanceOf[Object])
-    }
-    
-    jMap
-  
-  }
-  
   private def doIndexExists(params:Params,listener:OnErrorListener,requestMap:Map[String,Any], paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
         
     val index = params.param("index")
     try {
+      
       indexCreationLock.lock()
             
-      val indicesExistsResponse = client.admin().indices().prepareExists(index)
-                                    .execute().actionGet()
-            
+      val indicesExistsResponse = client.admin().indices().prepareExists(index).execute().actionGet()            
       if (indicesExistsResponse.isExists()) {
+        
         doMappingCreation(params,listener,requestMap,paramMap,chain)
             
       } else {
+        
         doIndexCreation(params,listener,requestMap,paramMap,chain, index)
             
       }
@@ -247,10 +186,9 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
     
     try {
       
-      val createIndexResponse = client.admin().indices().prepareCreate(index)
-                                  .execute().actionGet()
-            
+      val createIndexResponse = client.admin().indices().prepareCreate(index).execute().actionGet()            
       if (createIndexResponse.isAcknowledged()) {
+        
         doMappingCreation(params,listener,requestMap,paramMap,chain)
             
       } else {
@@ -314,66 +252,17 @@ class FeatureRequestHandler(settings:Settings,client:Client) extends RequestHand
        * Define mapping schema for index 'index' and 'type'; we have
        * to extract the fields dynamically from the request data
        */
-      val feature = requestMap.get("feature").asInstanceOf[Map[String,Any]]
-      val records = feature("data").asInstanceOf[Map[String,Any]]
+      val feature = requestMap.get("feature") match {
       
-      val builder = XContentFactory.jsonBuilder()
-      builder
-        .startObject()
-          .startObject(mapping)
-            .startObject("properties")
-
-              /* timestamp */
-              .startObject(TIMESTAMP_FIELD)
-                .field("type", "long")
-              .endObject()
-                    
-              /* site */
-              .startObject(SITE_FIELD)
-                .field("type", "string")
-                .field("index", "not_analyzed")
-              .endObject()
-
-      for (rec <- records) {
-        
-        val (name,valu) = rec
-        
-        if (valu.isInstanceOf[String]) {        
-          builder
-            .startObject(name)
-              .field("type","string")
-            .endObject()
-        
-        } else if (valu.isInstanceOf[Int]) {
-           builder
-            .startObject(name)
-              .field("type","integer")
-            .endObject()
- 
-        } else if (valu.isInstanceOf[Double]) {
-           builder
-            .startObject(name)
-              .field("type","double")
-            .endObject()
- 
-        } else if (valu.isInstanceOf[Long]) {
-           builder
-            .startObject(name)
-              .field("type","long")
-            .endObject()
-         
-        }
-     
+        case None => throw new AnalyticsException("Feature is null.")
+        case Some(valu) => valu.asInstanceOf[Map[String,Any]]
+    
       }
+      
+      val (names,types) = EBF.getFields(topic, feature)      
+      val builder = EBF.getBuilder(topic,mapping,names,types)
 
-      builder
-            .endObject() // properties
-          .endObject()   // mapping
-        .endObject()
-
-      val mappingResponse = client.admin().indices().preparePutMapping(index).setType(mapping).setSource(builder)
-                              .execute().actionGet()
-            
+      val mappingResponse = client.admin().indices().preparePutMapping(index).setType(mapping).setSource(builder).execute().actionGet()            
       if (mappingResponse.isAcknowledged()) {
             	
         fork(new Runnable() {

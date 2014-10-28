@@ -28,7 +28,6 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.action.index.IndexResponse
 
 import org.elasticsearch.common.logging.Loggers
-
 import org.elasticsearch.common.settings.Settings
 
 import org.elasticsearch.common.xcontent.ToXContent.Params
@@ -39,6 +38,8 @@ import org.elasticsearch.indices.IndexAlreadyExistsException
 import org.elasticsearch.action.index.IndexRequest.OpType
 
 import de.kp.elastic.insight.exception.AnalyticsException
+
+import de.kp.elastic.insight.track.{ElasticBuilderFactory => EBF}
 import de.kp.elastic.insight.utils.ListenerUtils
 
 import org.elasticsearch.client.Requests
@@ -46,15 +47,7 @@ import org.elasticsearch.client.Requests
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-class EventRequestHandler(settings:Settings,client:Client) extends RequestHandler {
-
-  val TIMESTAMP_FIELD:String = "timestamp"
-
-  val SITE_FIELD:String = "site"
-  val USER_FIELD:String = "user"
-
-  val GROUP_FIELD:String = "group"
-  val ITEM_FIELD:String  = "item"
+class RecordRequestHandler(settings:Settings,client:Client,topic:String) extends RequestHandler {
 
   private val DEFAULT_HEALTH_REQUEST_TIMEOUT:String = "30s"
   private val ERROR_LIST:String = "error.list"
@@ -69,53 +62,10 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
  
   
   override def execute(params:Params,listener:OnErrorListener,requestMap:Map[String,Any], paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
-   	
-    val index = params.param("index")
-    val mapping = params.param("type")
-
-    /*
-     * We evaluate that an event object is part of the request, and that this object
-     * has all required field provided
-     */
-    val event = requestMap.get("event") match {
-      
-      case None => throw new AnalyticsException("Event is null.")
-      case Some(event) => event.asInstanceOf[Map[String,Any]]
-    
-    }
-    
-    /* site */
-    val site = event.get(SITE_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'site' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* user */
-    val user = event.get(USER_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'user' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* group */
-    val group = event.get(GROUP_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'group' is not set.")
-      case Some(valu) => valu
-      
-    }
-    /* item */
-    val item = event.get(ITEM_FIELD) match {
-      
-      case None => throw new AnalyticsException("Field 'item' is not set.")
-      case Some(valu) => valu
-      
-    }
- 
+     
     try {
 
-      doEventCreation(params,listener,requestMap,paramMap,event,OpType.INDEX,chain)
+      writeRecord(params,listener,requestMap,paramMap,OpType.INDEX,chain)
 
     } catch {
       case e:Exception => {
@@ -141,7 +91,7 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
     
   }
     
-  private def doEventCreation(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],event:Map[String,Any],opType:OpType,chain:RequestHandlerChain) {
+  private def writeRecord(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],opType:OpType,chain:RequestHandlerChain) {
    	
     val index = params.param("index")
     val mapping = params.param("type")
@@ -173,42 +123,41 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
 	}
         
     /* Update index operation */
-    val content = XContentFactory.contentBuilder(Requests.INDEX_CONTENT_TYPE)
-    content.map(toJavaMap(event))
+    val record = requestMap.get("record") match {
+      
+      case None => throw new AnalyticsException("Record is null.")
+      case Some(valu) => valu.asInstanceOf[Map[String,Any]]
+    
+    }
+
+	val content = XContentFactory.contentBuilder(Requests.INDEX_CONTENT_TYPE)
+    content.map(EBF.getSource(topic,record))
 	
     client.prepareIndex(index, mapping).setSource(content).setRefresh(true).setOpType(opType)
       .execute(ListenerUtils.onIndex(responseListener, failureListener))
     
   }
   
-  private def toJavaMap(map:Map[String,Any]):java.util.Map[String,Object] = {
-    
-    val jMap = new java.util.HashMap[String,Object]
-    for (entry <- map) {
-      jMap.put(entry._1, entry._2.asInstanceOf[Object])
-    }
-    
-    jMap
-  
-  }
-  
   private def doIndexExists(params:Params,listener:OnErrorListener,requestMap:Map[String,Any], paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
         
     val index = params.param("index")
+    
     try {
       indexCreationLock.lock()
             
-      val indicesExistsResponse = client.admin().indices().prepareExists(index)
-                                    .execute().actionGet()
-            
+      val indicesExistsResponse = client.admin().indices().prepareExists(index).execute().actionGet()            
       if (indicesExistsResponse.isExists()) {
+        
         doMappingCreation(params,listener,requestMap,paramMap,chain)
             
       } else {
+        
         doIndexCreation(params,listener,requestMap,paramMap,chain, index)
             
       }
+      
     } catch {
+      
       case e:Exception => {
             
         val errorList = getErrorList(paramMap)
@@ -238,10 +187,9 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
     
     try {
       
-      val createIndexResponse = client.admin().indices().prepareCreate(index)
-                                  .execute().actionGet()
-            
+      val createIndexResponse = client.admin().indices().prepareCreate(index).execute().actionGet()            
       if (createIndexResponse.isAcknowledged()) {
+        
         doMappingCreation(params,listener,requestMap,paramMap,chain)
             
       } else {
@@ -301,54 +249,9 @@ class EventRequestHandler(settings:Settings,client:Client) extends RequestHandle
         listener.onError(new AnalyticsException("Failed to create index: " + index + "/" + mapping))
       }
 
-      /*
-       * Define mapping schema for index 'index' and 'type'; note, that
-       * we actually support the following common schema for rule and
-       * also series analysis: timestamp, site, user, group and item.
-       * 
-       * This schema is compliant to the actual transactional as well
-       * as sequence source in spark-arules and spark-fsm
-       */
-      val builder = XContentFactory.jsonBuilder()
-                      .startObject()
-                      .startObject(mapping)
-                        .startObject("properties")
+      val builder = EBF.getBuilder(topic,mapping)
 
-                          /* timestamp */
-                          .startObject(TIMESTAMP_FIELD)
-                            .field("type", "long")
-                          .endObject()
-                    
-                          /* site */
-                          .startObject(SITE_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
-                          .endObject()
-
-                          /* user */
-                          .startObject(USER_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
-                          .endObject()//
-
-                          /* group */
-                          .startObject(GROUP_FIELD)
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
-                          .endObject()//
-
-                          /* item */
-                          .startObject(ITEM_FIELD)
-                            .field("type", "integer")
-                          .endObject()
-
-                        .endObject() // properties
-                      .endObject()   // mapping
-                    .endObject()
-
-      val mappingResponse = client.admin().indices().preparePutMapping(index).setType(mapping).setSource(builder)
-                              .execute().actionGet()
-            
+      val mappingResponse = client.admin().indices().preparePutMapping(index).setType(mapping).setSource(builder).execute().actionGet()            
       if (mappingResponse.isAcknowledged()) {
             	
         fork(new Runnable() {

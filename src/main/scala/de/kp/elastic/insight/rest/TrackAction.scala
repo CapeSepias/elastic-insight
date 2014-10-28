@@ -38,46 +38,60 @@ import scala.collection.mutable.HashMap
 
 class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
 
-  /*
-   * Registration of the URL part that is responsible for indexing data
-   * that form a transaction or sequence database
-   */
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/event", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/event", this)
-  
-  private val eventHandler = new EventRequestHandler(settings,client)
-  
-  /*
-   * Registration of the URL part that is responsible for indexing data
-   * that form a feature database
-   */
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/feature", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/feature", this)
-  
-  private val featureHandler = new FeatureRequestHandler(settings,client)
+  /* Registration of the URL part that is responsible for indexing data */
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/track/{topic}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/track/{topic}", this)
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
-      val requestMap = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
-      val paramMap = HashMap.empty[String,Any]
+      val topic = request.param("topic")      
+      topic match {
 
-      val hasEvent = requestMap.contains("event")
-      val hasFeature = requestMap.contains("feature")
-
-      if (hasEvent) {
-            
-        val chain = new RequestHandlerChain(Array[RequestHandler](eventHandler,createAcknowledgedHandler(request,channel)))
-        chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
-            
-      } else if (hasFeature) {
+        /**
+         * The amount data structure is based on the RFM model: 
+         * R(ecency), F(requency) and M(onetary value) and is an 
+         * appropriate starting point for intent recognition
+         */
+        case "amount" => registerRecord(request,channel,client,topic)
         
-        val chain = new RequestHandlerChain(Array[RequestHandler](featureHandler,createAcknowledgedHandler(request,channel)))
-        chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
-      
-      } else {
-        throw new AnalyticsException("No event or feature provided.")            
+        /**
+         * The extended item data structure is common to outlier
+         * detection
+         */
+        case "extended_item" => registerRecord(request,channel,client,topic)
+        
+        /**
+         * The item data structure is common to association, series
+         * and similarity analysis
+         */        
+        case "item" => registerRecord(request,channel,client,topic)
+        
+        /**
+         * The decision feature data structure is common to decision
+         * analysis
+         */        
+        case "decision_feature" => registerFeature(request,channel,client,topic)
+        
+        /**
+         * The labeled feature data structure is common to outlier
+         * detection and similarity analysis
+         */
+        case "labeled_feature" => registerFeature(request,channel,client,topic)
+        
+        /**
+         * The targeted feature data structure is common to context-aware
+         * analysis
+         */
+        case "targeted_feature" => registerFeature(request,channel,client,topic)
+        
+        case _ => {
+          onError(channel, new AnalyticsException("No <topic> found."))
+          return    
+
+        }
+
       }
         
     } catch {
@@ -85,7 +99,31 @@ class TrackAction @Inject()(settings:Settings,client:Client,controller:RestContr
     }
     
   }
-    
+  
+  private def registerFeature(request:RestRequest,channel:RestChannel,client:Client,topic:String) {
+
+    val requestMap = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
+    val paramMap = HashMap.empty[String,Any]
+  
+    val featureHandler = new FeatureRequestHandler(settings,client,topic)
+        
+    val chain = new RequestHandlerChain(Array[RequestHandler](featureHandler,createAcknowledgedHandler(request,channel)))
+    chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
+  
+  }
+   
+  private def registerRecord(request:RestRequest,channel:RestChannel,client:Client,topic:String) {
+
+    val requestMap = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
+    val paramMap = HashMap.empty[String,Any]
+
+    val recordHandler  = new RecordRequestHandler(settings,client,topic)  
+            
+    val chain = new RequestHandlerChain(Array[RequestHandler](recordHandler,createAcknowledgedHandler(request,channel)))
+    chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
+        
+  }
+  
   private def createAcknowledgedHandler(request:RestRequest,channel:RestChannel):RequestHandler = {
     	
     return new RequestHandler() {
@@ -123,7 +161,19 @@ class TrackAction @Inject()(settings:Settings,client:Client,controller:RestContr
     }
     
   }    
-   
+  
+  private def onError(channel:RestChannel,t:Throwable) {
+        
+    try {
+      channel.sendResponse(new BytesRestResponse(channel, t))
+        
+    } catch {
+      case e:Throwable => logger.error("Failed to send a failure response.", e);
+  
+    }
+    
+  }
+  
   private def createOnErrorListener(channel:RestChannel):OnErrorListener = {
         
     return new OnErrorListener() {
