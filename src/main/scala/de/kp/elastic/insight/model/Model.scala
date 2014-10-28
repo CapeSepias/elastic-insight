@@ -31,10 +31,54 @@ case class ServiceResponse(
   service:String,task:String,data:Map[String,String],status:String
 )
 
+case class Behavior(site:String,user:String,states:List[String])
+
+case class Behaviors(items:List[Behavior])
+
+case class ClusteredPoint(
+  cluster:Int,distance:Double,point:LabeledPoint
+)
+
+case class ClusteredPoints(items:List[ClusteredPoint])
+
+case class ClusteredSequence(
+  cluster:Int,similarity:Double,sequence:NumberedSequence
+)
+
+case class ClusteredSequences(items:List[ClusteredSequence])
+
+case class FField(field:String,value:Double)
+
+case class FDetection(
+  distance:Double,label:String,features:List[FField])
+
+case class FDetections(items:List[FDetection])
+  
+case class BDetection(
+  site:String,user:String,states:List[String],metric:Double,flag:String)
+
+case class BDetections(items:List[BDetection])
+
+case class LabeledPoint(
+  label:String,features:Array[Double]
+)
+
+case class NumberedSequence(sid:Int,data:Array[Array[Int]])
+
 case class Pattern(
   support:Int,itemsets:List[List[Int]])
 
 case class Patterns(items:List[Pattern])
+
+case class Purchase(site:String,user:String,timestamp:Long,amount:Float)
+case class Purchases(items:List[Purchase])
+
+case class Relation (
+  items:List[Int],related:List[Int],support:Int,confidence:Double,weight:Double)
+
+case class Relations(site:String,user:String,items:List[Relation])
+
+case class MultiRelations(items:List[Relations])
 
 case class Rule (
   antecedent:List[Int],consequent:List[Int],support:Int,confidence:Double)
@@ -51,13 +95,26 @@ object ResponseStatus {
 object Serializer {
     
   implicit val formats = Serialization.formats(NoTypeHints)
+  
+  def deserializeBehavior(behaviors:String):Behaviors = read[Behaviors](behaviors)
 
-  def serializePatterns(patterns:Patterns):String = write(patterns) 
-  def deserializePatterns(patterns:String):Patterns = read[Patterns](patterns)
-  
-  def serializeRules(rules:Rules):String = write(rules)  
+  /*
+   * Clustered points specify the result of the similarity analysis
+   * with respect to features, and clustered sequences with respect
+   * to sequenecs
+   */
+  def deserializeClusteredPoints(points:String):ClusteredPoints = read[ClusteredPoints](points)
+  def deserializeClusteredSequences(sequences:String):ClusteredSequences = read[ClusteredSequences](sequences)
+
+  def deserializeBDetections(detections:String):BDetections = read[BDetections](detections)
+  def deserializeFDetections(detections:String):FDetections = read[FDetections](detections)
+ 
   def deserializeRules(rules:String):Rules = read[Rules](rules)
-  
+  def deserializeMultiRelations(relations:String):MultiRelations = read[MultiRelations](relations)
+   
+  def deserializePatterns(patterns:String):Patterns = read[Patterns](patterns)
+  def deserializePurchases(purchases:String):Purchases = read[Purchases](purchases)
+ 
   def serializeRequest(request:ServiceRequest):String = write(request)
   
 }
@@ -123,4 +180,75 @@ object Services {
 	
 	def isService(service:String):Boolean = services.contains(service)
 	
+}
+
+object Concepts {
+  /**
+   * Behavior is a concept used by outlier detection to specify outliers
+   * in human behavior
+   */
+  val BEHAVIOR:String = "behavior"
+  /**
+   * Concepts is a concept used by text analysis to retrieve the discovered
+   * topics
+   */
+  val CONCEPTS:String = "concepts"
+  /**
+   * Features is a concepts used by similarity analysis to retrieve similar
+   * datasets
+   */
+  val FEATURES:String = "features"
+  /**
+   * Followers is a concept used by association analysis to retrieve rules
+   * that either match the provided antecedent or consequent part; it is also
+   * used by series analysis
+   */
+  val FOLLOWERS:String = "followers"
+  /**
+   * Items is a concept used by association analysis to retrieve those rules
+   * that match with the latest transactions as antecedents
+   */
+  val ITEMS:String = "items"
+  /**
+   * Loyalty is used by intent recognition to predict the customers' loyalty
+   * states
+   */
+  val LOYALTY:String = "loyalty"
+  /**
+   * Outliers is a concept used by outlier detection to retrieve those data
+   * records that are far away from all others
+   */
+  val OUTLIERS:String = "outliers"
+  /**
+   * Patterns is used by series analysis to retrieve frequent patterns that
+   * have been discovered in activity sequences
+   */
+  val PATTERNS:String = "patterns"
+  /**
+   * Prediction is a concept used by decision analysis to retrieve a target
+   * value for a provided feature set; it is also used by context-aware analysis
+   */  
+  val PREDICTION:String = "prediction"
+  /**
+   * Purchase is a concept used by intent recognition to retrieve the next
+   * purchase horizon
+   */
+  val PURCHASE:String = "purchase"
+  /**
+   * Rules is a concept to retrieve discovered rules from association analysis;
+   * it is also used by series analysis
+   */
+  val RULES:String = "rules"
+  /**
+   * Sequences is a concept used by similarity analysis to retrieve clustered
+   * behavioural sequences
+   */
+  val SEQUENCES:String = "sequences"
+    
+  private val concepts = List(
+      CONCEPTS,FEATURES,FOLLOWERS,ITEMS,OUTLIERS,PATTERNS,PREDICTION,RULES,SEQUENCES      
+  )
+  
+  def isConcept(concept:String):Boolean = concepts.contains(concept)
+  
 }
