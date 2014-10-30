@@ -29,8 +29,9 @@ import org.elasticsearch.plugins.AbstractPlugin
 import org.elasticsearch.rest.RestModule
 import org.elasticsearch.river.RiversModule
 
-import de.kp.elastic.insight.module.{AnalyticsModule,AnalyticsRiverModule}
-import de.kp.elastic.insight.rest.{GetAction,StatusAction,TrackAction}
+import de.kp.elastic.insight.module.{AnalyticsModule}
+
+import de.kp.elastic.insight.rest.{GetAction,StatusAction,TrackAction,TrainAction}
 import de.kp.elastic.insight.service.AnalyticsService
 
 class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
@@ -47,38 +48,29 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
    */
   def onModule(module:RestModule) {
     	
-    if (settings.getAsBoolean("analytics.enabled", true)) {
-      /*
-       * Collect events or features
-       */
-   	  module.addRestAction(classOf[TrackAction])
-      /*
-       * Retrieve result information from remote analytics service
-       */
-      module.addRestAction(classOf[GetAction])
-      /*
-       * Retrieve status information from remote analytics service
-       */
-   	  module.addRestAction(classOf[StatusAction])
-    }
+    /*
+     * Retrieve result information from remote analytics service
+     */
+    module.addRestAction(classOf[GetAction])
+    /*
+     * Retrieve status information from remote analytics service
+     */
+   	module.addRestAction(classOf[StatusAction])
+    /*
+     * Collect training data
+     */
+    module.addRestAction(classOf[TrackAction])
+    /*
+     * Train predictive models
+     */
+    module.addRestAction(classOf[TrainAction])
     
   }
 
   /**
-   * River API
+   * River API - not supported
    */
   def onModule(module:RiversModule) {
-    	
-    if (settings.getAsBoolean("analytics.enabled", true)) {
-      /* 
-       * The module is bound to AnalyticsRiver; the type of the
-       * river is 'analytics' and must be part of the JSON request,
-       * i.e. {"type":"analytics",...}  
-       */
-      module.registerRiver("analytics", classOf[AnalyticsRiverModule])
-    
-    }
-    
   }
 
   /**
@@ -87,10 +79,8 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
   override def modules():Collection[Class[_ <: Module]] = {
 
     val modules:Collection[Class[_ <: Module]] = Lists.newArrayList()
-    if (settings.getAsBoolean("analytics.enabled", true)) {
-    	/* The module is bound to the AnalyticsService */
-    	modules.add(classOf[AnalyticsModule])
-    }
+  	/* The module is bound to the AnalyticsService */
+  	modules.add(classOf[AnalyticsModule])
         
     modules
     
@@ -102,9 +92,7 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
   override def services():Collection[Class[_ <: LifecycleComponent[_]]] = {
     	
     val services:Collection[Class[_ <: LifecycleComponent[_]]] = Lists.newArrayList()
-    if (settings.getAsBoolean("arules.enabled", true)) {     
-      services.add(classOf[AnalyticsService])        
-    }
+    services.add(classOf[AnalyticsService])        
       
     services
     

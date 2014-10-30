@@ -1,4 +1,4 @@
-package de.kp.elastic.insight.get
+package de.kp.elastic.insight.io
 /* Copyright (c) 2014 Dr. Krusche & Partner PartG
 * 
 * This file is part of the Elastic-Insight project
@@ -24,7 +24,7 @@ import de.kp.elastic.insight.exception.AnalyticsException
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
-object RequestBuilder {
+object GetRequestBuilder {
 
   def build(params:Map[String,Any]):ServiceRequest = {
         
@@ -76,6 +76,8 @@ object RequestBuilder {
             
           }
           
+          case _ => {/* do nothing */}          
+        
         }
          
       }
@@ -139,6 +141,8 @@ object RequestBuilder {
             
           }
           
+          case _ => {/* do nothing */}          
+                 
         }
         
       }
@@ -154,9 +158,9 @@ object RequestBuilder {
       case Services.TEXT => {
          /* not yet implemented */       
       }
+      case _ => {/* do nothing */}
     
     }
-    
     new ServiceRequest(service, task, data.toMap)
 
   }

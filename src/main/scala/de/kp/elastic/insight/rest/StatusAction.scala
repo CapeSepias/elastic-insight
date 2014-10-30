@@ -45,6 +45,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
 
+  logger.info("Add StatusAction module")
+
   controller.registerHandler(RestRequest.Method.GET,"/{index}/{type}/_analytics/status/{service}/{uid}", this)
   controller.registerHandler(RestRequest.Method.GET,"/{index}/_analytics/status/{service}/{uid}", this)
  

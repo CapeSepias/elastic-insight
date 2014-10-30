@@ -1,4 +1,4 @@
-package de.kp.elastic.insight.river.handler
+package de.kp.elastic.insight.io
 /* Copyright (c) 2014 Dr. Krusche & Partner PartG
 * 
 * This file is part of the Elastic-Insight project
@@ -18,29 +18,31 @@ package de.kp.elastic.insight.river.handler
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.elasticsearch.client.Client
-
-import org.elasticsearch.common.logging.Loggers
-import org.elasticsearch.common.settings.Settings
-
-import org.elasticsearch.river.RiverSettings
-
 import de.kp.elastic.insight.model._
+import de.kp.elastic.insight.exception.AnalyticsException
 
-class ActionHandler(riverSettings:RiverSettings,client:Client) {
+import scala.collection.mutable.HashMap
+import scala.collection.JavaConversions._
 
-  val globalSettings = riverSettings.globalSettings()
-  val rootSettings = riverSettings.settings()
-  
-  val logger = Loggers.getLogger(getClass(), globalSettings)
+object TrainRequestBuilder {
 
-  protected def execute(service:String) {}
+  def build(params:Map[String,Any]):ServiceRequest = {
+        
+    val service = params("service").asInstanceOf[String]
+    if (Services.isService(service) == false) {
+      throw new AnalyticsException("No <service> found.")
+      
+    }
+
+    val data = params.filter(kv => kv._2.isInstanceOf[String]).map(kv => {
+      
+      val (k,v) = kv
+      (k,v.asInstanceOf[String])
+      
+    }).toMap
     
-  protected def failure(req:ServiceRequest):ServiceResponse = {
+    new ServiceRequest(service,"train",data)
     
-    val uid = req.data("uid")    
-    new ServiceResponse(req.service,req.task,Map("uid" -> uid),ResponseStatus.FAILURE)	
-  
   }
-
+  
 }

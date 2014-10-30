@@ -44,7 +44,9 @@ object AnalyticsContext {
       if (clientPool.contains(service) == false) {
         clientPool += service -> new RemoteClient(service)      
       }
-   
+          
+      println("AnalyticsContext: send request to remote service.")
+      
       val client = clientPool(service)
       client.send(req)
        

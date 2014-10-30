@@ -38,6 +38,8 @@ import scala.collection.mutable.HashMap
 
 class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
 
+  logger.info("Add TrackAction module")
+
   /* Registration of the URL part that is responsible for indexing data */
   controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/track/{topic}", this)
   controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/track/{topic}", this)
@@ -46,6 +48,8 @@ class TrackAction @Inject()(settings:Settings,client:Client,controller:RestContr
 
     try {
 
+      logger.info("Track Request received")
+      
       val topic = request.param("topic")      
       topic match {
 

@@ -26,37 +26,49 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
+import org.elasticsearch.common.xcontent.ToXContent.Params
+import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory
+import org.elasticsearch.common.xcontent.json.JsonXContent
+
 import org.elasticsearch.rest.RestStatus.OK
+
+import de.kp.elastic.insight.exception.AnalyticsException
 
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.context.AnalyticsContext
 
-import de.kp.elastic.insight.exception.AnalyticsException
-import de.kp.elastic.insight.io.{GetRequestBuilder,GetResponseBuilder}
+import de.kp.elastic.insight.io.{TrainRequestBuilder,TrainResponseBuilder}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
-class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings, client) {
 
-  logger.info("Add GetAction module")
+class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
+
+  logger.info("Add TrainAction module")
+
+  /* Registration of the URL part that is responsible for training predictive models */
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/train/{service}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/train/{service}", this)
   
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/get/{service}/{uid}", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/get/{service}/{uid}", this)
-
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
-      logger.info("GetAction: Request received")
+      logger.info("Train Request received")
   
       val params = getParams(request)
-      logger.info("GetAction: " + params)
-      
-      val req = GetRequestBuilder.build(params)
+      logger.info("TrainAction: " + params)
+
+      logger.info("Training started")
+    
+      /*
+       * Build service request and send to remote service
+       */
+      val req = TrainRequestBuilder.build(params)
       val response = AnalyticsContext.send(req).mapTo[ServiceResponse]
       
       response.onSuccess {
@@ -66,7 +78,7 @@ class GetAction @Inject()(settings:Settings,client:Client,controller:RestControl
       response.onFailure {
         case throwable => onError(channel,throwable)
 	  }
-      
+        
     } catch {
       
       case e:Exception => onError(channel,e)
@@ -101,7 +113,7 @@ class GetAction @Inject()(settings:Settings,client:Client,controller:RestControl
       val pretty = 
         if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
 	  
-      val builder = GetResponseBuilder.build(response,pretty)
+      val builder = TrainResponseBuilder.build(response,pretty)
 	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
 	            
     } catch {
@@ -122,5 +134,5 @@ class GetAction @Inject()(settings:Settings,client:Client,controller:RestControl
     }
     
   }
-
+  
 }
