@@ -33,15 +33,60 @@ object TrainRequestBuilder {
       throw new AnalyticsException("No <service> found.")
       
     }
-
-    val data = params.filter(kv => kv._2.isInstanceOf[String]).map(kv => {
-      
-      val (k,v) = kv
-      (k,v.asInstanceOf[String])
-      
-    }).toMap
     
-    new ServiceRequest(service,"train",data)
+    val data = HashMap.empty[String,String]
+    /*
+     * Determine whether common mandatory parameters are provided with
+     * the train request; every request must be designated by a unique
+     * identifier. This parameter is also used as a reference for sub 
+     * sequent requests.
+     */
+    if (params.contains("uid") == false) {
+      throw new AnalyticsException("Not enough parameters to train dataset: <uid> is missing.")              
+    }
+    
+    data += "uid" -> params("uid").asInstanceOf[String]
+    
+    /*
+     * Determine whether the request specifies a valid data source; whether
+     * this specific data source is also valid for the respective service is
+     * evaluated by the associated predictive engine
+     */
+    if (params.contains("source") == false) {
+      throw new AnalyticsException("Not enough parameters to train dataset: <source> is missing.")                    
+    
+    } else {
+      
+      val source = params("source").asInstanceOf[String]
+      if (Sources.isSource(source) == false) {
+        throw new AnalyticsException("Unknown <source> provided.")                            
+      }
+      
+      data += "source" -> source
+      
+    }
+
+    val supported = List("algorithm","source","uid")
+    /*
+     * Actually the validation of all other parameters is performed
+     * by the different predictive engines individually
+     */
+    params.foreach(entry => {
+      
+      /* We make sure that only String parameters are sent to the
+       * different predictive engines
+       */
+      if (entry._2.isInstanceOf[String]) {
+        
+        if (supported.contains(entry._1) == false) {
+          data += entry._1 -> entry._2.asInstanceOf[String]
+        } 
+        
+      }
+      
+    })
+    
+    new ServiceRequest(service,"train",data.toMap)
     
   }
   

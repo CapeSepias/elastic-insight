@@ -23,13 +23,15 @@ import org.json4s._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read,write}
 
+/**
+ * ServiceRequest and ServiceResponse describe the common data structures used for
+ * Akka-based communication with the different predictive engines of PredictiveWorks.
+ */
 case class ServiceRequest(
-  service:String,task:String,data:Map[String,String]
-)
+  service:String,task:String,data:Map[String,String])
 
 case class ServiceResponse(
-  service:String,task:String,data:Map[String,String],status:String
-)
+  service:String,task:String,data:Map[String,String],status:String)
 
 case class Behavior(site:String,user:String,states:List[String])
 
@@ -252,3 +254,103 @@ object Concepts {
   def isConcept(concept:String):Boolean = concepts.contains(concept)
   
 }
+/**
+ * Predictiveworks. supports multiple data sources; currently sources from HDFS
+ * file system, Elasticsearch, JDBC database up to PIWIK Analytics is supported 
+ */
+object Sources {
+  /**
+   * Determines that the training data have to be taken from the HDFS file system;
+   * the respective path to the data must be specified in the one of the configuration
+   * files that refer to the chosen predictive engine.
+   */
+  val FILE:String = "FILE"
+  /**
+   * Determines that the training data have to be taken from an Elasticsearch 
+   * search index; in combination with this data source also a field specification
+   * (provided by an extra request) is required.
+   */
+  val ELASTIC:String = "ELASTIC" 
+  /**
+   * Determines that the training data have to be taken from a JDBC database; 
+   * in combination with this data source also a field specification (provided 
+   * by an extra request) is required.
+   */    
+  val JDBC:String = "JDBC"   
+  /**
+   * Predictiveworks. supports PIWIK Analytics and 'knows' about the fields that
+   * have to be used to retrieve the training data. The configuration parameters
+   * to access the underlying MySQL database must be provided for the multiple
+   * predictive engines individually
+   */
+  val PIWIK:String = "PIWIK"   
+    
+  private val sources = List(FILE,ELASTIC,JDBC,PIWIK)
+  
+  def isSource(source:String):Boolean = sources.contains(source)
+  
+}
+
+object Algorithms {
+
+  /**
+   * Factorization Machines(FM) are used by Context-Aware Analysis and 
+   * Text Analysis; this algorithm is usually combined with KMEANS 
+   * clustering
+   */
+  val FM:String = "FM"
+  /**
+   * Hidden Markov Models are used by Intent Recognition
+   */
+  val HIDDEN_MARKOV:String = "HIDDEN_MARKOV"
+  /**
+   * The KMeans clustering algorithm is used by Outlier Detection to 
+   * discover outliers in feature sets; it is also used by Similarity
+   * Analysis
+   */
+  val KMEANS:String = "KMEANS"
+  /**
+   * Latent Dirichlet Allocation (LDA) is used by Text Analysis in combination
+   * with KMEANS clustering to detect semantic topics from heterogeneous textual 
+   * artifacts
+   */
+  val LDA:String = "LDA"     
+  /**
+   * Markov Models are used by Intent Recognition and also by Outlier 
+   * Detection is case of outliers in sequential data sets
+   */
+  val MARKOV:String = "MARKOV"    
+  /**
+   * Random Forests (RF) are used by Decision Analysis for classification 
+   * and regression 
+   */
+  val RF:String = "RF"
+  /**
+   * SKMEANS is used by Similarity Analysis to cluster sequential data sets
+   */
+  val SKMEANS:String = "SKMEANS"
+  /**
+   * SPADE is used by Series Analysis for pattern discovery in large scale 
+   * sequential datasets
+   */    
+  val SPADE:String = "SPADE"
+  
+  /**
+   * TOPK and TOPKNR algorithm is used by Association Analysis to determine
+   * the most relevant associations from large-scale datasets
+   */
+  val TOPK:String = "TOPK"
+  val TOPKNR:String = "TOPKNR"  
+  /**
+   * TSR is used by Series Analysis to discover rules in large scale sequential
+   * data sets
+   */
+  val TSR:String = "TSR"
+   
+  private val algorithms = List(FM,HIDDEN_MARKOV,KMEANS,LDA,MARKOV,RF,SKMEANS,SPADE,TOPK,TOPKNR,TSR)
+  
+  def isAlgorithm(algorithm:String):Boolean = algorithms.contains(algorithm)
+  
+}
+
+
