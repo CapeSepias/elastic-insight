@@ -353,4 +353,21 @@ object Algorithms {
   
 }
 
+object Fields {
+  
+  val FEATURES:String = "features"
+  
+  val FIELDS:String = "fields"
+
+  val LOYALTY:String = "loyalty"
+    
+  val PURCHASE:String = "purchase"
+    
+  val SEQUENCES:String = "sequences"
+
+  val fields = List(FEATURES,FIELDS,LOYALTY,PURCHASE,SEQUENCES)
+  
+  def isMetadata(field:String):Boolean = fields.contains(field)
+  
+}
 

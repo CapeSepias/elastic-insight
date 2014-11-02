@@ -48,7 +48,7 @@ object AnalyticsContext {
       println("AnalyticsContext: send request to remote service.")
       
       val client = clientPool(service)
-      client.send(req)
+      client.send(Serializer.serializeRequest(req))
        
     } else {
      

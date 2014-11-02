@@ -35,6 +35,7 @@ object GetResponseBuilder {
         .field("service",res.service)
         .field("task",res.task)
         .field("status",res.status)
+        .field("uid",res.data("uid"))
 
     res.service match {
       /*
