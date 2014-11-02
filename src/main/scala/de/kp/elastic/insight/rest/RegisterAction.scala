@@ -57,10 +57,13 @@ class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestCo
       logger.info("RegisterAction: " + params)
       
       val req = RegisterRequestBuilder.build(params)
-      val response = AnalyticsContext.send(req).mapTo[ServiceResponse]
       
+      val service = req.service
+      val message = Serializer.serializeRequest(req)
+      
+      val response = AnalyticsContext.send(service,message).mapTo[String]      
       response.onSuccess {
-        case result => onResponse(channel,request,result)
+        case result => onResponse(channel,request,Serializer.deserializeResponse(result))
       }
     
       response.onFailure {

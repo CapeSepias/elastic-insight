@@ -117,7 +117,9 @@ object Serializer {
   def deserializePatterns(patterns:String):Patterns = read[Patterns](patterns)
   def deserializePurchases(purchases:String):Purchases = read[Purchases](purchases)
  
-  def serializeRequest(request:ServiceRequest):String = write(request)
+  def serializeRequest(request:ServiceRequest):String = write(request)  
+  def deserializeResponse(response:String):ServiceResponse = read[ServiceResponse](response)
+ 
   
 }
 

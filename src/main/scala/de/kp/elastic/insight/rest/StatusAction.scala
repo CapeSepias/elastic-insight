@@ -72,14 +72,15 @@ class StatusAction @Inject()(settings:Settings,client:Client,controller:RestCont
     }
     
     val req = new ServiceRequest(service,"status",Map("uid" -> uid))
-    val response = AnalyticsContext.send(req).mapTo[ServiceResponse]
+    val message = Serializer.serializeRequest(req)
       
+    val response = AnalyticsContext.send(service,message).mapTo[String]      
     response.onSuccess {
-        case result => onResponse(channel,request,result)
+      case result => onResponse(channel,request,Serializer.deserializeResponse(result))
     }
     
     response.onFailure {
-        case throwable => onError(channel,throwable)
+      case throwable => onError(channel,throwable)
 	}
     
   }
