@@ -188,46 +188,45 @@ object Services {
 
 object Concepts {
   /**
+   * Antecedent is a concept used by association analysis and series analysis 
+   * to specify which part of the rules is subject to filtering
+   */
+  val ANTECEDENT:String = "antecendent"
+  /**
    * Behavior is a concept used by outlier detection to specify outliers
    * in human behavior
    */
   val BEHAVIOR:String = "behavior"
   /**
-   * Concepts is a concept used by text analysis to retrieve the discovered
+   * Concept is a concept used by text analysis to retrieve the discovered
    * topics
    */
-  val CONCEPTS:String = "concepts"
+  val CONCEPT:String = "concept"
   /**
-   * Features is a concepts used by similarity analysis to retrieve similar
+   * Consequent is a concept used by association analysis and series analysis
+   * to specify which part of the rules is subject to filtering
+   */
+  val CONSEQUENT:String = "consequent"
+  /**
+   * Feature is a concepts used by similarity analysis to retrieve similar
    * datasets
    */
-  val FEATURES:String = "features"
-  /**
-   * Followers is a concept used by association analysis to retrieve rules
-   * that either match the provided antecedent or consequent part; it is also
-   * used by series analysis
-   */
-  val FOLLOWERS:String = "followers"
-  /**
-   * Items is a concept used by association analysis to retrieve those rules
-   * that match with the latest transactions as antecedents
-   */
-  val ITEMS:String = "items"
+  val FEATURE:String = "feature"
   /**
    * Loyalty is used by intent recognition to predict the customers' loyalty
    * states
    */
   val LOYALTY:String = "loyalty"
   /**
-   * Outliers is a concept used by outlier detection to retrieve those data
+   * Outlier is a concept used by outlier detection to retrieve those data
    * records that are far away from all others
    */
-  val OUTLIERS:String = "outliers"
+  val OUTLIER:String = "outlier"
   /**
    * Patterns is used by series analysis to retrieve frequent patterns that
    * have been discovered in activity sequences
    */
-  val PATTERNS:String = "patterns"
+  val PATTERN:String = "pattern"
   /**
    * Prediction is a concept used by decision analysis to retrieve a target
    * value for a provided feature set; it is also used by context-aware analysis
@@ -239,18 +238,23 @@ object Concepts {
    */
   val PURCHASE:String = "purchase"
   /**
-   * Rules is a concept to retrieve discovered rules from association analysis;
-   * it is also used by series analysis
+   * Transaction is a concept used by association analysis to retrieve those rules
+   * that match with the latest transactions as antecedents
    */
-  val RULES:String = "rules"
+  val TRANSACTION:String = "transaction"
   /**
-   * Sequences is a concept used by similarity analysis to retrieve clustered
+   * Rule is a concept to retrieve discovered rules from association analysis and
+   * series analysis
+   */
+  val RULE:String = "rule"
+  /**
+   * Sequence is a concept used by similarity analysis to retrieve clustered
    * behavioural sequences
    */
-  val SEQUENCES:String = "sequences"
+  val SEQUENCE:String = "sequence"
     
   private val concepts = List(
-      CONCEPTS,FEATURES,FOLLOWERS,ITEMS,OUTLIERS,PATTERNS,PREDICTION,RULES,SEQUENCES      
+    ANTECEDENT,BEHAVIOR,CONCEPT,FEATURE,LOYALTY,OUTLIER,PATTERN,PREDICTION,PURCHASE,TRANSACTION,RULE,SEQUENCE     
   )
   
   def isConcept(concept:String):Boolean = concepts.contains(concept)

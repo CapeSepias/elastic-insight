@@ -42,15 +42,12 @@ object GetResponseBuilder {
        * Association Analysis
        */	  
 	  case Services.ASSOCIATION => {
-        
-	    if (res.data.contains(Concepts.FOLLOWERS)) {
-	      appendFollowers(builder,res.data(Concepts.FOLLOWERS))
 	      
-	    } else if (res.data.contains(Concepts.ITEMS)) {
-	      appendItems(builder,res.data(Concepts.ITEMS))
+	    if (res.data.contains(Concepts.TRANSACTION)) {
+	      appendItems(builder,res.data(Concepts.TRANSACTION))
 	      
-	    } else if (res.data.contains(Concepts.RULES)) {
-	      appendRules(builder,res.data(Concepts.RULES))
+	    } else if (res.data.contains(Concepts.RULE)) {
+	      appendRules(builder,res.data(Concepts.RULE))
 	    }
 	    
 	  }
@@ -98,8 +95,8 @@ object GetResponseBuilder {
 	    if (res.data.contains(Concepts.BEHAVIOR)) {
 	      appendBDetection(builder,res.data(Concepts.BEHAVIOR))
 	    
-	    } else if (res.data.contains(Concepts.FEATURES)) {
-	      appendFDetection(builder,res.data(Concepts.FEATURES))
+	    } else if (res.data.contains(Concepts.FEATURE)) {
+	      appendFDetection(builder,res.data(Concepts.FEATURE))
 	      
 	    } 
 
@@ -108,15 +105,12 @@ object GetResponseBuilder {
 	   * Series Analysis
 	   */
 	  case Services.SERIES => {
-
-	    if (res.data.contains(Concepts.FOLLOWERS)) {
-	      appendFollowers(builder,res.data(Concepts.FOLLOWERS))
 	      
-	    } else if (res.data.contains(Concepts.PATTERNS)) {
-	      appendPatterns(builder,res.data(Concepts.PATTERNS))
+	    if (res.data.contains(Concepts.PATTERN)) {
+	      appendPatterns(builder,res.data(Concepts.PATTERN))
 	      
-	    } else if (res.data.contains(Concepts.RULES)) {
-	      appendRules(builder,res.data(Concepts.RULES))
+	    } else if (res.data.contains(Concepts.RULE)) {
+	      appendRules(builder,res.data(Concepts.RULE))
 	    }
 	    
 	  }
@@ -125,11 +119,11 @@ object GetResponseBuilder {
        */	  
 	  case Services.SIMILARITY => {
 	    
-	    if (res.data.contains(Concepts.FEATURES)) {
-	      appendFeatures(builder,res.data(Concepts.FEATURES))
+	    if (res.data.contains(Concepts.FEATURE)) {
+	      appendFeatures(builder,res.data(Concepts.FEATURE))
 	      
-	    } else if (res.data.contains(Concepts.SEQUENCES)) {
-	      appendSequences(builder,res.data(Concepts.SEQUENCES))
+	    } else if (res.data.contains(Concepts.SEQUENCE)) {
+	      appendSequences(builder,res.data(Concepts.SEQUENCE))
 	      
 	    }
 	    
@@ -258,8 +252,6 @@ object GetResponseBuilder {
 	builder.endObject()
     
   }
-
-  private def appendFollowers(builder:XContentBuilder,followers:String) = appendRules(builder,followers)
   
   private def appendItems(builder:XContentBuilder,relations:String) {
      

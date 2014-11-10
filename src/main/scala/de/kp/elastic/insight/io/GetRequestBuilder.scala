@@ -49,30 +49,28 @@ object GetRequestBuilder {
     service match {
       
       case Services.ASSOCIATION => {
-        /*
-         * Association analysis requires input parameters for 'follow' requests;
-         * the input either specifies antecedents for consequent retrieval or
-         * vice versa.
-         */
+
         concept match {
           
-          case Concepts.FOLLOWERS => {
+          case Concepts.ANTECEDENT => {
  
-            if (params.contains("antecedent") == false && params.contains("consequent") == false) {
+            if (params.contains("items") == false) {
               throw new AnalyticsException("Not enough parameters to retrieve followers.")              
             }
+              
+            val items = params("items").asInstanceOf[List[Int]]
+            data += "items" -> items.mkString(",")
             
-            if (params.contains("antecedent")) {
-              
-              val antecedent = params("antecedent").asInstanceOf[List[Int]]
-              data += "antecedent" -> antecedent.mkString(",")
-              
-            } else {
-              
-              val consequent = params("consequent").asInstanceOf[List[Int]]
-              data += "consequent" -> consequent.mkString(",")
-              
+          }
+          
+          case Concepts.CONSEQUENT => {
+ 
+            if (params.contains("items") == false) {
+              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
             }
+              
+            val items = params("items").asInstanceOf[List[Int]]
+            data += "items" -> items.mkString(",")
             
           }
           
@@ -121,23 +119,25 @@ object GetRequestBuilder {
          */
         concept match {
           
-          case Concepts.FOLLOWERS => {
+          case Concepts.ANTECEDENT => {
  
-            if (params.contains("antecedent") == false && params.contains("consequent") == false) {
+            if (params.contains("items") == false) {
               throw new AnalyticsException("Not enough parameters to retrieve followers.")              
             }
+              
+            val items = params("items").asInstanceOf[List[Int]]
+            data += "items" -> items.mkString(",")
             
-            if (params.contains("antecedent")) {
-              
-              val antecedent = params("antecedent").asInstanceOf[List[Int]]
-              data += "antecedent" -> antecedent.mkString(",")
-              
-            } else {
-              
-              val consequent = params("consequent").asInstanceOf[List[Int]]
-              data += "consequent" -> consequent.mkString(",")
-              
+          }
+          
+          case Concepts.CONSEQUENT => {
+ 
+            if (params.contains("items") == false) {
+              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
             }
+              
+            val items = params("items").asInstanceOf[List[Int]]
+            data += "items" -> items.mkString(",")
             
           }
           
