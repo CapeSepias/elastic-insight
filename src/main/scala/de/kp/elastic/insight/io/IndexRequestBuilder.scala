@@ -230,7 +230,7 @@ object IndexRequestBuilder {
     try {
               
       val types = params("types").asInstanceOf[List[String]]
-      data += "names" -> types.mkString(",")
+      data += "types" -> types.mkString(",")
       
     } catch {
       
