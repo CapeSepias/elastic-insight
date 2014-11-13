@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>elastic-insight</groupId>
   <artifactId>elastic-insight</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <description>Elasticsearch plug-in to interact with the predictive engines of Predictivework.</description>
   <inceptionYear>2010</inceptionYear>
   <licenses>

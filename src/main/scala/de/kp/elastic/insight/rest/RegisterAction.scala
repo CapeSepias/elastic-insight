@@ -42,10 +42,8 @@ import scala.collection.mutable.HashMap
 
 class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings, client) {
 
-  logger.info("Add RegisterAction module")
-  
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/register/{service}/{uid}", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/register/{service}/{uid}", this)
+  logger.info("Add RegisterAction module") 
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{uid}", this)
 
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 

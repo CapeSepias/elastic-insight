@@ -48,7 +48,7 @@ object RegisterRequestBuilder {
 
 	  case "association" => {
 	    
-	    if (metadata != Fields.FIELDS) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    if (metadata != Fields.FIELD) throw new AnalyticsException("Metadata are not valid for the service provided.")
 	    
 	    appendMetaItem(params,data)
 	    new ServiceRequest(service,"register",data.toMap)  
@@ -57,7 +57,7 @@ object RegisterRequestBuilder {
 	  
 	  case "context" => {
 	    
-	    if (metadata != Fields.FEATURES) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    if (metadata != Fields.FEATURE) throw new AnalyticsException("Metadata are not valid for the service provided.")
 
 	    appendMetaNames(params,data)
 	    new ServiceRequest(service,"register",data.toMap)  
@@ -65,7 +65,7 @@ object RegisterRequestBuilder {
 	  }
       case "decision" => {
 	    
-	    if (metadata != Fields.FEATURES) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    if (metadata != Fields.FEATURE) throw new AnalyticsException("Metadata are not valid for the service provided.")
 	    
 	    appendMetaNames(params,data)
 	    appendMetaTypes(params,data)
@@ -99,7 +99,7 @@ object RegisterRequestBuilder {
 	    
 	    metadata match {
 	      
-	      case Fields.FEATURES => {
+	      case Fields.FEATURE => {
 	    
 	        appendMetaNames(params,data)
 	        appendMetaTypes(params,data)
@@ -108,7 +108,7 @@ object RegisterRequestBuilder {
 	        
 	        
 	      }
-	      case Fields.SEQUENCES => {
+	      case Fields.SEQUENCE => {
 	    
 	        appendMetaExtendedItem(params,data)
 	        new ServiceRequest(service,"register:sequences",data.toMap)  
@@ -122,7 +122,7 @@ object RegisterRequestBuilder {
 	  }
 	  case "series" => {
 	    
-	    if (metadata != "fields") throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    if (metadata != Fields.FIELD) throw new AnalyticsException("Metadata are not valid for the service provided.")
 	    
 	    appendMetaItem(params,data)
 	    new ServiceRequest(service,"register",data.toMap)  
@@ -133,7 +133,7 @@ object RegisterRequestBuilder {
 	    
 	    metadata match {
 
-	      case Fields.FEATURES => {
+	      case Fields.FEATURE => {
 	    
 	        appendMetaNames(params,data)
 	        appendMetaTypes(params,data)
@@ -141,7 +141,7 @@ object RegisterRequestBuilder {
 	        new ServiceRequest(service,"register:features",data.toMap)  
 	        
 	      }	
-	      case Fields.SEQUENCES => {
+	      case Fields.SEQUENCE => {
 	    
 	        appendMetaItem(params,data)
 	        new ServiceRequest(service,"register:sequences",data.toMap)  
@@ -155,16 +155,16 @@ object RegisterRequestBuilder {
 	  }
 	  case "social" => {
 	    /* Not implemented yet */
+	    null
 	  }
 	  case "text" => {
 	    /* Not implemented yet */
+	    null
 	  }
 
 	  case _ => throw new AnalyticsException("Unknown service.")
 	  
     }
-    
-    null
     
   }
   

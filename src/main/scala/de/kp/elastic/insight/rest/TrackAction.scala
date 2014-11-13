@@ -18,183 +18,80 @@ package de.kp.elastic.insight.rest
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import java.io.IOException
+
 import org.elasticsearch.rest._
 import org.elasticsearch.client.Client
 
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import org.elasticsearch.common.xcontent.ToXContent.Params
-import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory
-import org.elasticsearch.common.xcontent.json.JsonXContent
-
 import org.elasticsearch.rest.RestStatus.OK
 
-import de.kp.elastic.insight.exception.AnalyticsException
+import de.kp.elastic.insight.model._
+import de.kp.elastic.insight.context.AnalyticsContext
 
+import de.kp.elastic.insight.exception.AnalyticsException
+import de.kp.elastic.insight.io.{TrackRequestBuilder,TrackResponseBuilder}
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConversions._
+
 import scala.collection.mutable.HashMap
 
-class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
+class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
 
   logger.info("Add TrackAction module")
 
   /* Registration of the URL part that is responsible for indexing data */
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/track/{topic}", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/track/{topic}", this)
-  
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/track/{service}/{topic}", this)
+
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
-      logger.info("Track Request received")
+      logger.info("TrackAction: Request received")
+  
+      val params = getParams(request)
+      logger.info("TrackAction: " + params)
       
-      val topic = request.param("topic")      
-      topic match {
-
-        /**
-         * The amount data structure is based on the RFM model: 
-         * R(ecency), F(requency) and M(onetary value) and is an 
-         * appropriate starting point for intent recognition
-         */
-        case "amount" => registerRecord(request,channel,client,topic)
-        
-        /**
-         * The extended item data structure is common to outlier
-         * detection
-         */
-        case "extended_item" => registerRecord(request,channel,client,topic)
-        
-        /**
-         * The item data structure is common to association, series
-         * and similarity analysis
-         */        
-        case "item" => registerRecord(request,channel,client,topic)
-        
-        /**
-         * The decision feature data structure is common to decision
-         * analysis
-         */        
-        case "decision_feature" => registerFeature(request,channel,client,topic)
-        
-        /**
-         * The labeled feature data structure is common to outlier
-         * detection and similarity analysis
-         */
-        case "labeled_feature" => registerFeature(request,channel,client,topic)
-        
-        /**
-         * The targeted feature data structure is common to context-aware
-         * analysis
-         */
-        case "targeted_feature" => registerFeature(request,channel,client,topic)
-        
-        case _ => {
-          onError(channel, new AnalyticsException("No <topic> found."))
-          return    
-
-        }
-
+      val req = TrackRequestBuilder.build(params)
+      
+      val service = req.service
+      val message = Serializer.serializeRequest(req)
+      
+      val response = AnalyticsContext.send(service,message).mapTo[String]      
+      response.onSuccess {
+        case result => onResponse(channel,request,Serializer.deserializeResponse(result))
       }
-        
-    } catch {
-      case e:Exception => createOnErrorListener(channel).onError(e)       
-    }
     
-  }
-  
-  private def registerFeature(request:RestRequest,channel:RestChannel,client:Client,topic:String) {
-
-    val requestMap = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
-    val paramMap = HashMap.empty[String,Any]
-  
-    val featureHandler = new FeatureRequestHandler(settings,client,topic)
-        
-    val chain = new RequestHandlerChain(Array[RequestHandler](featureHandler,createAcknowledgedHandler(request,channel)))
-    chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
-  
-  }
-   
-  private def registerRecord(request:RestRequest,channel:RestChannel,client:Client,topic:String) {
-
-    val requestMap = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose().toMap
-    val paramMap = HashMap.empty[String,Any]
-
-    val recordHandler  = new RecordRequestHandler(settings,client,topic)  
-            
-    val chain = new RequestHandlerChain(Array[RequestHandler](recordHandler,createAcknowledgedHandler(request,channel)))
-    chain.execute(request, createOnErrorListener(channel), requestMap, paramMap)
-        
-  }
-  
-  private def createAcknowledgedHandler(request:RestRequest,channel:RestChannel):RequestHandler = {
-    	
-    return new RequestHandler() {
-
-	  override def execute(params:Params,listener:OnErrorListener,requestMap:Map[String,Any],paramMap:HashMap[String,Any],chain:RequestHandlerChain) {
-
-		try {
-	      
-		  val builder = JsonXContent.contentBuilder()
-	      val pretty = request.param("pretty")
-	                
-	      if (pretty != null && !"false".equalsIgnoreCase(pretty)) {
-	         builder.prettyPrint().lfAtEnd()
-	      }
-	                
-	      builder.startObject()
-	      builder.field("acknowledged", true)
-	                
-	      builder.endObject()
-	      channel.sendResponse(new BytesRestResponse(OK, builder))
-	            
-		} catch {
-		    
-		  case e:Exception => {    
-		    try {
-	            channel.sendResponse(new BytesRestResponse(channel, e))
-		    } catch {
-	            case ex:Exception =>  logger.error("Failed to send a failure response.", ex)
-		    }
-		  
-		  }
-		}				
+      response.onFailure {
+        case throwable => onError(channel,throwable)
 	  }
-    	
+      
+    } catch {
+      
+      case e:Exception => onError(channel,e)
+       
     }
     
-  }    
+  }
   
-  private def onError(channel:RestChannel,t:Throwable) {
-        
+  private def onResponse(channel:RestChannel,request:RestRequest,response:ServiceResponse) {
+	            
     try {
-      channel.sendResponse(new BytesRestResponse(channel, t))
-        
+	  
+      val pretty = 
+        if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
+	  
+      val builder = TrackResponseBuilder.build(response,pretty)
+	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
+	            
     } catch {
-      case e:Throwable => logger.error("Failed to send a failure response.", e);
-  
-    }
+      case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
     
-  }
-  
-  private def createOnErrorListener(channel:RestChannel):OnErrorListener = {
-        
-    return new OnErrorListener() {
-			
-	  override def onError(t:Throwable) {
-	            
-	    try {
-	      channel.sendResponse(new BytesRestResponse(channel,t))
-	            
-	    } catch {
-	        case e:Exception => logger.error("Failed to send a failure response.", e)
-	            
-	    }
-		
-	  }
-
-    }
+    }   
     
   }
 

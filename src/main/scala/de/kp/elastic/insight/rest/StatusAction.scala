@@ -43,17 +43,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * the status is held in a Redis instance and is not part of
  * the search index
  */
-class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
+class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
 
   logger.info("Add StatusAction module")
-
-  controller.registerHandler(RestRequest.Method.GET,"/{index}/{type}/_analytics/status/{service}/{uid}", this)
-  controller.registerHandler(RestRequest.Method.GET,"/{index}/_analytics/status/{service}/{uid}", this)
+  controller.registerHandler(RestRequest.Method.GET,"/_analytics/status/{service}/{uid}", this)
  
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
-    
-    val index = request.param("index")
-    val mapping = request.param("type")
 
     val service = request.param("service")
     if (StringUtils.isBlank(service)) {
@@ -109,18 +104,6 @@ class StatusAction @Inject()(settings:Settings,client:Client,controller:RestCont
     } catch {
       case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
     }   
-    
-  }
-  
-  private def onError(channel:RestChannel,t:Throwable) {
-        
-    try {
-      channel.sendResponse(new BytesRestResponse(channel, t))
-        
-    } catch {
-      case e:Throwable => logger.error("Failed to send a failure response.", e);
-  
-    }
     
   }
 

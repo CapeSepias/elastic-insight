@@ -31,7 +31,7 @@ import org.elasticsearch.river.RiversModule
 
 import de.kp.elastic.insight.module.{AnalyticsModule}
 
-import de.kp.elastic.insight.rest.{GetAction,RegisterAction,StatusAction,TrackAction,TrainAction}
+import de.kp.elastic.insight.rest.{GetAction,IndexAction,RegisterAction,StatusAction,TrackAction,TrainAction}
 import de.kp.elastic.insight.service.AnalyticsService
 
 class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
@@ -52,6 +52,10 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
      * Retrieve result information from remote analytics service
      */
     module.addRestAction(classOf[GetAction])
+     /*
+     * Create index
+     */
+   	module.addRestAction(classOf[IndexAction])
      /*
      * Register metadata descriptions
      */

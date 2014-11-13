@@ -26,11 +26,6 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import org.elasticsearch.common.xcontent.ToXContent.Params
-import org.elasticsearch.common.xcontent.XContentBuilder
-import org.elasticsearch.common.xcontent.XContentFactory
-import org.elasticsearch.common.xcontent.json.JsonXContent
-
 import org.elasticsearch.rest.RestStatus.OK
 
 import de.kp.elastic.insight.exception.AnalyticsException
@@ -42,17 +37,10 @@ import de.kp.elastic.insight.io.{TrainRequestBuilder,TrainResponseBuilder}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.collection.JavaConversions._
-import scala.collection.mutable.HashMap
-
-
-class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings,client) {
+class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
 
   logger.info("Add TrainAction module")
-
-  /* Registration of the URL part that is responsible for training predictive models */
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/{type}/_analytics/train/{service}", this)
-  controller.registerHandler(RestRequest.Method.POST,"/{index}/_analytics/train/{service}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/train/{service}", this)
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
@@ -89,25 +77,6 @@ class TrainAction @Inject()(settings:Settings,client:Client,controller:RestContr
     }
     
   }
-
-  private def getParams(request:RestRequest):Map[String,Any] = {
-
-    val data = HashMap.empty[String,Any]
-    
-    /* Append request parameters */
-    request.params().foreach(entry => {
-      data += entry._1-> entry._2
-    })
-    
-    /* Append content parameters */
-    val params = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose()
-    params.foreach(entry => {
-      data += entry._1-> entry._2
-    })
-      
-    data.toMap
-
-  }
   
   private def onResponse(channel:RestChannel,request:RestRequest,response:ServiceResponse) {
 	            
@@ -123,18 +92,6 @@ class TrainAction @Inject()(settings:Settings,client:Client,controller:RestContr
       case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
     
     }   
-    
-  }
- 
-  private def onError(channel:RestChannel,t:Throwable) {
-        
-    try {
-      channel.sendResponse(new BytesRestResponse(channel, t))
-        
-    } catch {
-      case e:Throwable => logger.error("Failed to send a failure response.", e);
-  
-    }
     
   }
   

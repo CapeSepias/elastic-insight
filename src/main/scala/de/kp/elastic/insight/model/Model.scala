@@ -359,19 +359,35 @@ object Algorithms {
   
 }
 
+object Elements {
+  
+  val AMOUNT:String = "amount"
+  
+  val FEATURE:String = "feature"
+
+  val ITEM:String = "item"
+    
+  val SEQUENCE:String = "sequence"
+
+  val elements = List(AMOUNT,FEATURE,ITEM,SEQUENCE)
+  
+  def isElement(element:String):Boolean = elements.contains(element)
+  
+}
+
 object Fields {
   
-  val FEATURES:String = "features"
+  val FEATURE:String = "feature"
   
-  val FIELDS:String = "fields"
+  val FIELD:String = "field"
 
   val LOYALTY:String = "loyalty"
     
   val PURCHASE:String = "purchase"
     
-  val SEQUENCES:String = "sequences"
+  val SEQUENCE:String = "sequence"
 
-  val fields = List(FEATURES,FIELDS,LOYALTY,PURCHASE,SEQUENCES)
+  val fields = List(FEATURE,FIELD,LOYALTY,PURCHASE,SEQUENCE)
   
   def isMetadata(field:String):Boolean = fields.contains(field)
   

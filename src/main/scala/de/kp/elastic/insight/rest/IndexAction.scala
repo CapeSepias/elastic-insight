@@ -26,31 +26,35 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
+import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.rest.RestStatus.OK
 
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.context.AnalyticsContext
 
 import de.kp.elastic.insight.exception.AnalyticsException
-import de.kp.elastic.insight.io.{GetRequestBuilder,GetResponseBuilder}
+import de.kp.elastic.insight.io.{IndexRequestBuilder,IndexResponseBuilder}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConversions._
 
-class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+import scala.collection.mutable.HashMap
 
-  logger.info("Add GetAction module")  
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}/{uid}", this)
+class IndexAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+
+  logger.info("Add IndexAction module")  
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/index/{service}/{topic}/{uid}", this)
 
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
-      logger.info("GetAction: Request received")
+      logger.info("IndexAction: Request received")
   
       val params = getParams(request)
-      logger.info("GetAction: " + params)
+      logger.info("IndexAction: " + params)
       
-      val req = GetRequestBuilder.build(params)
+      val req = IndexRequestBuilder.build(params)
       
       val service = req.service
       val message = Serializer.serializeRequest(req)
@@ -79,7 +83,7 @@ class GetAction @Inject()(settings:Settings,client:Client,controller:RestControl
       val pretty = 
         if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
 	  
-      val builder = GetResponseBuilder.build(response,pretty)
+      val builder = IndexResponseBuilder.build(response,pretty)
 	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
 	            
     } catch {
