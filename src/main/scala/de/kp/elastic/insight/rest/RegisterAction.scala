@@ -18,108 +18,33 @@ package de.kp.elastic.insight.rest
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.io.IOException
-
 import org.elasticsearch.rest._
 import org.elasticsearch.client.Client
 
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import org.elasticsearch.common.xcontent.XContentFactory
-import org.elasticsearch.rest.RestStatus.OK
-
-import de.kp.elastic.insight.model._
-import de.kp.elastic.insight.context.AnalyticsContext
-
-import de.kp.elastic.insight.exception.AnalyticsException
 import de.kp.elastic.insight.io.{RegisterRequestBuilder,RegisterResponseBuilder}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConversions._
-
-import scala.collection.mutable.HashMap
-
-class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends BaseRestHandler(settings, client) {
+class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
 
   logger.info("Add RegisterAction module") 
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{uid}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{metadata}", this)
 
+  private val requestBuilder  = new RegisterRequestBuilder()
+  private val responseBuilder = new RegisterResponseBuilder()
+  
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
       logger.info("RegisterAction: Request received")
-  
-      val params = getParams(request)
-      logger.info("RegisterAction: " + params)
-      
-      val req = RegisterRequestBuilder.build(params)
-      
-      val service = req.service
-      val message = Serializer.serializeRequest(req)
-      
-      val response = AnalyticsContext.send(service,message).mapTo[String]      
-      response.onSuccess {
-        case result => onResponse(channel,request,Serializer.deserializeResponse(result))
-      }
-    
-      response.onFailure {
-        case throwable => onError(channel,throwable)
-	  }
+      executeRequest(request,channel,requestBuilder,responseBuilder)
       
     } catch {
       
       case e:Exception => onError(channel,e)
        
-    }
-    
-  }
-
-  private def getParams(request:RestRequest):Map[String,Any] = {
-
-    val data = HashMap.empty[String,Any]
-    
-    /* Append request parameters */
-    request.params().foreach(entry => {
-      data += entry._1-> entry._2
-    })
-    
-    /* Append content parameters */
-    val params = XContentFactory.xContent(request.content()).createParser(request.content()).mapAndClose()
-    params.foreach(entry => {
-      data += entry._1-> entry._2
-    })
-      
-    data.toMap
-
-  }
-  
-  private def onResponse(channel:RestChannel,request:RestRequest,response:ServiceResponse) {
-	            
-    try {
-	  
-      val pretty = 
-        if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
-	  
-      val builder = RegisterResponseBuilder.build(response,pretty)
-	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
-	            
-    } catch {
-      case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
-    
-    }   
-    
-  }
- 
-  private def onError(channel:RestChannel,t:Throwable) {
-        
-    try {
-      channel.sendResponse(new BytesRestResponse(channel, t))
-        
-    } catch {
-      case e:Throwable => logger.error("Failed to send a failure response.", e);
-  
     }
     
   }

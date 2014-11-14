@@ -18,42 +18,28 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.elasticsearch.common.xcontent.XContentFactory
-import org.elasticsearch.common.xcontent.XContentBuilder
-
 import de.kp.elastic.insight.model._
+import de.kp.elastic.insight.exception.AnalyticsException
 
-class IndexResponseBuilder extends ResponseBuilder {
+import scala.collection.mutable.HashMap
+import scala.collection.JavaConversions._
 
-  def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
+class StatusRequestBuilder extends RequestBuilder {
+
+  override def build(params:Map[String,Any]):ServiceRequest = {
+        
+    val service = params("service").asInstanceOf[String]
+    if (Services.isService(service) == false) {
+      throw new AnalyticsException("No <service> found.")
       
-    val builder = XContentFactory.jsonBuilder()
-	if (pretty) builder.prettyPrint().lfAtEnd()
-
-	builder
-      .startObject()
-        .field("service",res.service)
-        .field("task",res.task)
-        .field("status",res.status)
+    }
     
-    /* Tranform response data */
-    val data = res.data
+    /* Build request data */
+    val data = HashMap.empty[String,String]   
+    data += "uid" -> params("uid").asInstanceOf[String]
+ 
+    new ServiceRequest(service,"status",data.toMap)
     
-    data.get("uid") match {
-	  
-	  case None => {/* do nothing */}
-	  case Some(uid) => builder.field("uid",uid)
-	}
-    
-    data.get("message") match {
-	  
-	  case None => {/* do nothing */}
-	  case Some(message) => builder.field("message",message)
-	}
-    
-	builder.endObject()
-    builder
-
   }
-  
+
 }

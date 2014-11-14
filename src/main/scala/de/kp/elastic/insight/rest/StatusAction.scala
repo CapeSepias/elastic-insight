@@ -26,17 +26,7 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import org.elasticsearch.common.xcontent.XContentFactory
-
-import org.elasticsearch.rest.RestStatus.OK
-
-import de.kp.elastic.insight.model._
-import de.kp.elastic.insight.context.AnalyticsContext
-
-import de.kp.elastic.insight.exception.AnalyticsException
-import de.kp.elastic.insight.utils.StringUtils
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import de.kp.elastic.insight.io.{StatusRequestBuilder,StatusResponseBuilder}
 /**
  * This action retrieves the status of a certain data mining
  * or model building task from the remote analytics service;
@@ -48,62 +38,21 @@ class StatusAction @Inject()(settings:Settings,client:Client,controller:RestCont
   logger.info("Add StatusAction module")
   controller.registerHandler(RestRequest.Method.GET,"/_analytics/status/{service}/{uid}", this)
  
+  private val requestBuilder = new StatusRequestBuilder()
+  private val responseBuilder = new StatusResponseBuilder()
+  
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
-    val service = request.param("service")
-    if (StringUtils.isBlank(service)) {
-
-      onError(channel, new AnalyticsException("No <service> found."))
-      return
-    
-    }
-
-    val uid = request.param("uid")
-    if (StringUtils.isBlank(uid)) {
-
-      onError(channel, new AnalyticsException("No <uid> found."))
-      return
-    
-    }
-    
-    val req = new ServiceRequest(service,"status",Map("uid" -> uid))
-    val message = Serializer.serializeRequest(req)
-      
-    val response = AnalyticsContext.send(service,message).mapTo[String]      
-    response.onSuccess {
-      case result => onResponse(channel,request,Serializer.deserializeResponse(result))
-    }
-    
-    response.onFailure {
-      case throwable => onError(channel,throwable)
-	}
-    
-  }
-
-  private def onResponse(channel:RestChannel,request:RestRequest,response:ServiceResponse) {
-	            
     try {
-	  
-      val builder = XContentFactory.jsonBuilder()
-	  
-      val pretty = request.param("pretty")
-	  if (pretty != null && !"false".equalsIgnoreCase(pretty)) {
-	    builder.prettyPrint().lfAtEnd()
-	  }
-	  
-      builder
-        .startObject()
-          .field("service",response.service)
-          .field("task",response.status)
-          .field("uid",response.data("uid"))
-          .field("status",response.status)
-	    .endObject()
 
-	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
-	            
+      logger.info("Status Request received")
+      executeRequest(request,channel,requestBuilder,responseBuilder)
+        
     } catch {
-      case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
-    }   
+      
+      case e:Exception => onError(channel,e)
+       
+    }
     
   }
 

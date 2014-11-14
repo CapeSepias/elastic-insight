@@ -23,9 +23,9 @@ import org.elasticsearch.common.xcontent.XContentBuilder
 
 import de.kp.elastic.insight.model._
 
-object GetResponseBuilder {
+class GetResponseBuilder extends ResponseBuilder {
 
-  def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
+  override def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
       
     val builder = XContentFactory.jsonBuilder()
 	if (pretty) builder.prettyPrint().lfAtEnd()

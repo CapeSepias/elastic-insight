@@ -17,16 +17,53 @@ package de.kp.elastic.insight.rest
 * 
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
+import java.io.IOException
+
 import org.elasticsearch.rest._
 
 import org.elasticsearch.client.Client
+
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.xcontent.XContentFactory
+
+import org.elasticsearch.rest.RestStatus.OK
+
+import de.kp.elastic.insight.model._
+import de.kp.elastic.insight.context.AnalyticsContext
+
+import de.kp.elastic.insight.io.{RequestBuilder,ResponseBuilder}
+import de.kp.elastic.insight.exception.AnalyticsException
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 abstract class InsightRestHandler(settings:Settings,client:Client) extends BaseRestHandler(settings, client) {
+
+  protected def executeRequest(request:RestRequest,channel:RestChannel,requestBuilder:RequestBuilder,responseBuilder:ResponseBuilder) {
+  
+    val params = getParams(request)
+    
+    /*
+     * Build service request and send to remote service
+     */
+    val req = requestBuilder.build(params)
+      
+    val service = req.service
+    val message = Serializer.serializeRequest(req)
+      
+    val response = AnalyticsContext.send(service,message).mapTo[String]      
+    response.onSuccess {
+        case result => onResponse(channel,responseBuilder,request,Serializer.deserializeResponse(result))
+    }
+    
+    response.onFailure {
+      case throwable => onError(channel,throwable)
+	}
+    
+  }
 
   protected def getParams(request:RestRequest):Map[String,Any] = {
 
@@ -56,6 +93,23 @@ abstract class InsightRestHandler(settings:Settings,client:Client) extends BaseR
       case e:Throwable => logger.error("Failed to send a failure response.", e);
   
     }
+    
+  }
+  
+  protected def onResponse(channel:RestChannel,builder:ResponseBuilder,request:RestRequest,response:ServiceResponse) {
+	            
+    try {
+	  
+      val pretty = 
+        if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
+	  
+      val contentBuilder = builder.build(response,pretty)
+	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,contentBuilder))
+	            
+    } catch {
+      case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
+    
+    }   
     
   }
 

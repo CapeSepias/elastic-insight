@@ -18,42 +18,11 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.common.xcontent.XContentBuilder
-
 import de.kp.elastic.insight.model._
 
-class IndexResponseBuilder extends ResponseBuilder {
+abstract class ResponseBuilder {
 
-  def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
-      
-    val builder = XContentFactory.jsonBuilder()
-	if (pretty) builder.prettyPrint().lfAtEnd()
+  def build(res:ServiceResponse,pretty:Boolean):XContentBuilder
 
-	builder
-      .startObject()
-        .field("service",res.service)
-        .field("task",res.task)
-        .field("status",res.status)
-    
-    /* Tranform response data */
-    val data = res.data
-    
-    data.get("uid") match {
-	  
-	  case None => {/* do nothing */}
-	  case Some(uid) => builder.field("uid",uid)
-	}
-    
-    data.get("message") match {
-	  
-	  case None => {/* do nothing */}
-	  case Some(message) => builder.field("message",message)
-	}
-    
-	builder.endObject()
-    builder
-
-  }
-  
 }

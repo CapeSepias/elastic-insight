@@ -23,7 +23,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder
 
 import de.kp.elastic.insight.model._
 
-class IndexResponseBuilder extends ResponseBuilder {
+class StatusResponseBuilder extends ResponseBuilder {
 
   def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
       
@@ -55,5 +55,5 @@ class IndexResponseBuilder extends ResponseBuilder {
     builder
 
   }
-  
+
 }

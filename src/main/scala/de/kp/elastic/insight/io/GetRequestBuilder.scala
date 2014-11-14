@@ -24,9 +24,9 @@ import de.kp.elastic.insight.exception.AnalyticsException
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
-object GetRequestBuilder {
+class GetRequestBuilder extends RequestBuilder {
 
-  def build(params:Map[String,Any]):ServiceRequest = {
+  override def build(params:Map[String,Any]):ServiceRequest = {
         
     val service = params("service").asInstanceOf[String]
     if (Services.isService(service) == false) {

@@ -171,12 +171,6 @@ object Services {
     semantic targeting.
     */
 	val TEXT:String = "text"
-    /**
-    The MetaService collects XML based metadata description that are used by the respective engines 
-    to access supported data sources; e.g. for the decision service a metadata description specifies 
-    which fields have to be taken into account and which of them are categorical or numerical fields.
-    */
-	val META:String = "meta"
 
 	private val services = List(
 	    ASSOCIATION,CONTEXT,DECISION,INTENT,OUTLIER,SERIES,SIMILARITY,SOCIAL,TEXT

@@ -23,7 +23,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder
 
 import de.kp.elastic.insight.model._
 
-object RegisterResponseBuilder {
+class RegisterResponseBuilder extends ResponseBuilder {
 
   def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
       

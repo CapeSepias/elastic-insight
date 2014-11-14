@@ -24,7 +24,7 @@ import de.kp.elastic.insight.exception.AnalyticsException
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
-object TrackRequestBuilder {
+class TrackRequestBuilder extends RequestBuilder {
 
   def build(params:Map[String,Any]):ServiceRequest = {
         

@@ -18,74 +18,33 @@ package de.kp.elastic.insight.rest
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.io.IOException
-
 import org.elasticsearch.rest._
 import org.elasticsearch.client.Client
 
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import org.elasticsearch.rest.RestStatus.OK
-
-import de.kp.elastic.insight.model._
-import de.kp.elastic.insight.context.AnalyticsContext
-
-import de.kp.elastic.insight.exception.AnalyticsException
 import de.kp.elastic.insight.io.{GetRequestBuilder,GetResponseBuilder}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
 
   logger.info("Add GetAction module")  
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}/{uid}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}", this)
 
+  private val requestBuilder  = new GetRequestBuilder()
+  private val responseBuilder = new GetResponseBuilder()
+  
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
     try {
 
       logger.info("GetAction: Request received")
-  
-      val params = getParams(request)
-      logger.info("GetAction: " + params)
+      executeRequest(request,channel,requestBuilder,responseBuilder)
       
-      val req = GetRequestBuilder.build(params)
-      
-      val service = req.service
-      val message = Serializer.serializeRequest(req)
-      
-      val response = AnalyticsContext.send(service,message).mapTo[String]      
-      response.onSuccess {
-        case result => onResponse(channel,request,Serializer.deserializeResponse(result))
-      }
-    
-      response.onFailure {
-        case throwable => onError(channel,throwable)
-	  }
-      
-    } catch {
-      
+    } catch {      
       case e:Exception => onError(channel,e)
        
     }
-    
-  }
-  
-  private def onResponse(channel:RestChannel,request:RestRequest,response:ServiceResponse) {
-	            
-    try {
-	  
-      val pretty = 
-        if (request.param("pretty") != null && !"false".equalsIgnoreCase(request.param("pretty"))) true else false
-	  
-      val builder = GetResponseBuilder.build(response,pretty)
-	  channel.sendResponse(new BytesRestResponse(RestStatus.OK,builder))
-	            
-    } catch {
-      case e:IOException => throw new AnalyticsException("Failed to build a response.", e)
-    
-    }   
     
   }
 
