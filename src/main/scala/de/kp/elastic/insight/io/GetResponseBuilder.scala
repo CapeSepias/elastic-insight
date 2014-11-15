@@ -261,33 +261,33 @@ class GetResponseBuilder extends ResponseBuilder {
 	builder.field("total", data.items.size)
 	  
 	builder.startArray("data")    
-	for (relations <- data.items) {
+	for (weightedRules <- data.items) {
 
 	  builder.startObject()
 	  
-	  builder.field("site",relations.site)
-	  builder.field("user",relations.user)
+	  builder.field("site",weightedRules.site)
+	  builder.field("user",weightedRules.user)
 	  
 	  builder.startArray("rules")
-	  for (relation <- relations.items) {
+	  for (weightedRule <- weightedRules.items) {
 	    
 	    builder.startObject()
 
 	    /* items */
 	    builder.startArray("antecedent")
-	    relation.items.foreach(v => builder.value(v))
+	    weightedRule.antecedent.foreach(v => builder.value(v))
 	    builder.endArray()
 
 	    /* related */
-	    builder.startArray("related")
-	    relation.related.foreach(v => builder.value(v))
+	    builder.startArray("consequent")
+	    weightedRule.consequent.foreach(v => builder.value(v))
 	    builder.endArray()
 	    
 	    /* relation parameters */
-	    builder.field("support",relation.support)
-	    builder.field("confidence",relation.confidence)
+	    builder.field("support",weightedRule.support)
+	    builder.field("confidence",weightedRule.confidence)
 	    
-	    builder.field("weight",relation.weight)
+	    builder.field("weight",weightedRule.weight)
 
 	    builder.endObject()
 	    

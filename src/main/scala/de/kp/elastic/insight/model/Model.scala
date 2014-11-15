@@ -75,12 +75,12 @@ case class Patterns(items:List[Pattern])
 case class Purchase(site:String,user:String,timestamp:Long,amount:Float)
 case class Purchases(items:List[Purchase])
 
-case class Relation (
-  items:List[Int],related:List[Int],support:Int,confidence:Double,weight:Double)
+case class WeightedRule (
+  antecedent:List[Int],consequent:List[Int],support:Int,confidence:Double,weight:Double)
 
-case class Relations(site:String,user:String,items:List[Relation])
+case class WeightedRules(site:String,user:String,items:List[WeightedRule])
 
-case class MultiRelations(items:List[Relations])
+case class MultiRelations(items:List[WeightedRules])
 
 case class Rule (
   antecedent:List[Int],consequent:List[Int],support:Int,confidence:Double)
