@@ -360,10 +360,12 @@ object Elements {
   val FEATURE:String = "feature"
 
   val ITEM:String = "item"
+  
+  val RULE:String = "rule"
     
   val SEQUENCE:String = "sequence"
 
-  val elements = List(AMOUNT,FEATURE,ITEM,SEQUENCE)
+  val elements = List(AMOUNT,FEATURE,ITEM,RULE,SEQUENCE)
   
   def isElement(element:String):Boolean = elements.contains(element)
   

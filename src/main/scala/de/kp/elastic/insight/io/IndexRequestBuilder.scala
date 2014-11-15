@@ -48,10 +48,25 @@ class IndexRequestBuilder extends RequestBuilder {
 
 	  case "association" => {
 	    
-	    if (topic != Elements.ITEM) throw new AnalyticsException("Indexing topic is not valid for the service provided.")
+	    topic match {
+	      
+	      case Elements.ITEM => {
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
+	        new ServiceRequest(service,"index:item",data.toMap)  	        
+	      }	        
+	      case Elements.RULE => {
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
+	        new ServiceRequest(service,"index:rule",data.toMap)  
+	      }	      
+	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
 	    
-	    appendItem(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
+	    }
 	  
 	  }
 	  
@@ -80,12 +95,12 @@ class IndexRequestBuilder extends RequestBuilder {
 	    topic match {	      
 
 	      case Elements.AMOUNT => {
-	    
-	        appendAmount(params,data)
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
 	        new ServiceRequest(service,"index:amount",data.toMap)  
-	        
-	      }
-	      
+	      }	      
 	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
 	      
 	    }
@@ -105,24 +120,40 @@ class IndexRequestBuilder extends RequestBuilder {
 	        
 	      }
 	      case Elements.SEQUENCE => {
-	    
-	        appendExtendedItem(params,data)
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
 	        new ServiceRequest(service,"index:sequence",data.toMap)  
-	        
 	      }
-	      
 	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
 	    
 	    }
 	    
 	  }
 	  case "series" => {
+
+	    topic match {
+	      
+	      case Elements.ITEM => {
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
+	        new ServiceRequest(service,"index:item",data.toMap)  	        
+	      }
+	        
+	      case Elements.RULE => {
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
+	        new ServiceRequest(service,"index:rule",data.toMap)  
+	      }
+	      
+	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
+	    }
 	    
-	    if (topic != Elements.ITEM) throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	    
-	    appendItem(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
-	  
 	  }
 
 	  case "similarity" => {
@@ -138,12 +169,12 @@ class IndexRequestBuilder extends RequestBuilder {
 	        
 	      }	
 	      case Elements.SEQUENCE => {
-	    
-	        appendItem(params,data)
-	        new ServiceRequest(service,"index:sequence",data.toMap)  
-	        
+            /* 
+             * The schema fields are predefined and no additional
+             * information must be provided externally
+             */ 
+	        new ServiceRequest(service,"index:sequence",data.toMap)  	        
 	      }
-	      
 	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
 	      
 	    }
@@ -162,49 +193,6 @@ class IndexRequestBuilder extends RequestBuilder {
 	  
     }
     
-  }
-  
-  /** Amount is used by Intent Recognition */
-  private def appendAmount(params:Map[String,Any],data:HashMap[String,String]) {
- 
-    try {
-         
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
-
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "amount" -> params("amount").asInstanceOf[String]
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
-  }
-  /** Item is used by Association Analysis **/
-  private def appendItem(params:Map[String,Any],data:HashMap[String,String]) {
- 
-    try {
-         
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
-
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
-
-      data += "item" -> params("item").asInstanceOf[String]
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
   }
   
   /** Names & Types are used by Context, Decision Analysis, Outlier Detection and Similarity Analysis **/
@@ -241,28 +229,5 @@ class IndexRequestBuilder extends RequestBuilder {
     }
 
   }
-  
-  private def appendExtendedItem(params:Map[String,Any],data:HashMap[String,String]) {
  
-    try {
-         
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
-
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
-
-      data += "item" -> params("item").asInstanceOf[String]
-      data += "price" -> params("price").asInstanceOf[String]
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
-  }
-
 }
