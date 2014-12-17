@@ -18,12 +18,15 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.common.xcontent.XContentBuilder
 
 import de.kp.elastic.insight.model._
 
-class IndexResponseBuilder extends ResponseBuilder {
+class SimpleResponseBuilder extends ResponseBuilder {
 
   def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
       
@@ -35,17 +38,9 @@ class IndexResponseBuilder extends ResponseBuilder {
         .field("service",res.service)
         .field("task",res.task)
         .field("status",res.status)
+        .field("uid",res.data(Names.REQ_UID))
     
-    /* Tranform response data */
-    val data = res.data
-    
-    data.get("uid") match {
-	  
-	  case None => {/* do nothing */}
-	  case Some(uid) => builder.field("uid",uid)
-	}
-    
-    data.get("message") match {
+    res.data.get(Names.REQ_MESSAGE) match {
 	  
 	  case None => {/* do nothing */}
 	  case Some(message) => builder.field("message",message)

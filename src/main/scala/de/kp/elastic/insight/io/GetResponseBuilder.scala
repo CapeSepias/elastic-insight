@@ -21,6 +21,9 @@ package de.kp.elastic.insight.io
 import org.elasticsearch.common.xcontent.XContentFactory
 import org.elasticsearch.common.xcontent.XContentBuilder
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 
 class GetResponseBuilder extends ResponseBuilder {
@@ -36,125 +39,142 @@ class GetResponseBuilder extends ResponseBuilder {
         .field("task",res.task)
         .field("status",res.status)
         .field("uid",res.data("uid"))
+	    
+	val status = res.status
+	if (status == ResponseStatus.SUCCESS) {
+	  
+	  val response = res.data(Names.REQ_RESPONSE)
+      builder.startObject("result")
+	  
+      val Array(task,topic) = res.task.split(":")
+	  res.service match {
+        /*
+         * Association Analysis
+         */	  
+	    case Services.ASSOCIATION => {
+	      
+	      if (List("antecedent","consequent","rule").contains(topic)) {
+	        addRules(builder,response)
+	        
+	      } else if (task == "crule") {
+	        addCRules(builder,response)
+	        
+	      } else {
+	        // TODO
+	      }
+	      
+	    }
+	    /*
+	     * Context-Aware Analysis
+	     */
+	    case Services.CONTEXT => {
+	    
+	      if (task == "predict")
+            builder.field("prediction",response)
+	      
+	      if (task == "similar") {
+	        // TODO
+	      }
+	    
+	    }
+	    /*
+	     * Decision Analysis
+	     */
+	    case Services.DECISION => {
+          builder.field("prediction",response)
+	    }
+	    /*
+	     * Intent Recognition
+	     */
+	    case Services.INTENT => {
+	    
+	      if (topic == "loyalty")
+	        addLoyalty(builder,response)
+	      
+	      if (topic == "purchase")
+	        addPurchase(builder,response)
+	    
+	    }
+	    /*
+	     * Outlier Detection
+	     */
+	    case Services.OUTLIER => {
+	      
+	      if (topic == "featue") {
+	        addFDetection(builder,response)
 
-    res.service match {
-      /*
-       * Association Analysis
-       */	  
-	  case Services.ASSOCIATION => {
-	      
-	    if (res.data.contains(Concepts.TRANSACTION)) {
-	      appendItems(builder,res.data(Concepts.TRANSACTION))
-	      
-	    } else if (res.data.contains(Concepts.RULE)) {
-	      appendRules(builder,res.data(Concepts.RULE))
-	    }
-	    
-	  }
-	  /*
-	   * Context-Aware Analysis
-	   */
-	  case Services.CONTEXT => {
-	    
-	    if (res.data.contains(Concepts.PREDICTION)) {
-	      appendPrediction(builder,res.data(Concepts.PREDICTION))
-	      
-	    }
-	    
-	  }
-	  /*
-	   * Decision Analysis
-	   */
-	  case Services.DECISION => {
-	    
-	    if (res.data.contains(Concepts.PREDICTION)) {
-	      appendPrediction(builder,res.data(Concepts.PREDICTION))
-	      
-	    }
-	    
-	  }
-	  /*
-	   * Intent Recognition
-	   */
-	  case Services.INTENT => {
-	    
-	    if (res.data.contains(Concepts.LOYALTY)) {
-	      appendLoyalty(builder,res.data(Concepts.LOYALTY))
-	      
-	    } else if (res.data.contains(Concepts.PURCHASE)) {
-	      appendPurchase(builder,res.data(Concepts.PURCHASE))
-	      
-	    }
-	    
-	  }
-	  /*
-	   * Outlier Detection
-	   */
-	  case Services.OUTLIER => {
-	    
-	    if (res.data.contains(Concepts.BEHAVIOR)) {
-	      appendBDetection(builder,res.data(Concepts.BEHAVIOR))
-	    
-	    } else if (res.data.contains(Concepts.FEATURE)) {
-	      appendFDetection(builder,res.data(Concepts.FEATURE))
-	      
-	    } 
+	      } else {
+	        addBDetection(builder,response)
+	        
+	      }
 
-	  }
-	  /*
-	   * Series Analysis
-	   */
-	  case Services.SERIES => {
-	      
-	    if (res.data.contains(Concepts.PATTERN)) {
-	      appendPatterns(builder,res.data(Concepts.PATTERN))
-	      
-	    } else if (res.data.contains(Concepts.RULE)) {
-	      appendRules(builder,res.data(Concepts.RULE))
 	    }
-	    
-	  }
-      /*
-       * Similarity Analysis
-       */	  
-	  case Services.SIMILARITY => {
-	    
-	    if (res.data.contains(Concepts.FEATURE)) {
-	      appendFeatures(builder,res.data(Concepts.FEATURE))
+	    /*
+	     * Series Analysis
+	     */
+	    case Services.SERIES => {
 	      
-	    } else if (res.data.contains(Concepts.SEQUENCE)) {
-	      appendSequences(builder,res.data(Concepts.SEQUENCE))
+	      if (List("antecedent","consequent","rule").contains(topic)) {
+	        addRules(builder,response)
+	      
+	      } else {
+	        addPatterns(builder,response)
+	      
+	      }
+	    
+	    }
+        /*
+         * Similarity Analysis
+         */	  
+	    case Services.SIMILARITY => {
+	    
+	      if (topic == "feature")
+	        addFeatures(builder,response)
+	      
+	      if (topic == "sequence")
+	        addSequences(builder,response)
 	      
 	    }
-	    
+	    /*
+	     * Social Analysis
+	     */
+	    case Services.SOCIAL => {
+	      /* not implemented yet */
+	    }
+	    /*
+	     * Text Analysis
+	     */
+	    case Services.TEXT => {
+	      /* not implemented yet */
+	    }
+	    case _ => {/* do nothing */}
 	  }
+
+	  builder.endObject()
+	  
+	} else {
 	  /*
-	   * Social Analysis
-	   */
-	  case Services.SOCIAL => {
-	    /* not implemented yet */
+	   * In case of a failed request, there can be a response
+	   * message to describe the respective error in more detail
+	   */      
+	  if (res.data.contains(Names.REQ_MESSAGE)) {
+	    builder.field("message",res.data(Names.REQ_MESSAGE))
 	  }
-	  /*
-	   * Text Analysis
-	   */
-	  case Services.TEXT => {
-	    /* not implemented yet */
-	  }
+	
 	}
-          
+         
 	builder.endObject()
     builder
     
   }
-  private def appendBDetection(builder:XContentBuilder,detection:String) = {
+  private def addBDetection(builder:XContentBuilder,detection:String) = {
      
     val data = Serializer.deserializeBDetections(detection)
 
-    builder.startObject("result")
 	builder.field("total", data.items.size)
-	  
 	builder.startArray("data")    
-    for (record <- data.items) {
+
+	for (record <- data.items) {
       
       builder.startObject()
        /* site */
@@ -175,18 +195,16 @@ class GetResponseBuilder extends ResponseBuilder {
     }
 	  
     builder.endArray()	  
-	builder.endObject()
    
   }
   
-  private def appendFDetection(builder:XContentBuilder,detection:String) = {
+  private def addFDetection(builder:XContentBuilder,detection:String) = {
      
     val data = Serializer.deserializeFDetections(detection)
 
-    builder.startObject("result")
-	builder.field("total", data.items.size)
-	  
+	builder.field("total", data.items.size)	  
 	builder.startArray("data")    
+	
     for (record <- data.items) {
       
       builder.startObject()
@@ -212,19 +230,17 @@ class GetResponseBuilder extends ResponseBuilder {
     }
 	  
     builder.endArray()	  
-	builder.endObject()
     
   }
   
-  private def appendFeatures(builder:XContentBuilder,features:String) = {
+  private def addFeatures(builder:XContentBuilder,features:String) = {
      
     val data = Serializer.deserializeClusteredPoints(features)
 
-    builder.startObject("result")
 	builder.field("total", data.items.size)
-	  
 	builder.startArray("data")    
-    for (record <- data.items) {
+
+	for (record <- data.items) {
       
       builder.startObject()
       
@@ -249,7 +265,6 @@ class GetResponseBuilder extends ResponseBuilder {
     }
 	  
     builder.endArray()	  
-	builder.endObject()
     
   }
   
@@ -300,15 +315,14 @@ class GetResponseBuilder extends ResponseBuilder {
 
   }
   
-  private def appendLoyalty(builder:XContentBuilder,loyalty:String) {
+  private def addLoyalty(builder:XContentBuilder,loyalty:String) {
     
     val data = Serializer.deserializeBehavior(loyalty)
 
-    builder.startObject("result")
 	builder.field("total", data.items.size)
-	  
 	builder.startArray("data")    
-    for (record <- data.items) {
+
+	for (record <- data.items) {
       
       builder.startObject()
       
@@ -326,18 +340,49 @@ class GetResponseBuilder extends ResponseBuilder {
 	}
 	  
     builder.endArray()	  
-	builder.endObject()
    
   }
   
-  private def appendPatterns(builder:XContentBuilder,patterns:String) {
+  private def addCRules(builder:XContentBuilder,rules:String) {
+     
+    val data = Serializer.deserializeCRules(rules)
+    
+	builder.field("total", data.items.size)	
+	builder.startArray("data")	  
+	
+	for (rule <- data.items) {
+	  
+	  builder.startObject()
+	  
+	  /* antecendent */
+	  builder.startArray("antecedent")
+	  rule.antecedent.foreach(v => builder.value(v))
+	  builder.endArray()
+	  
+	  /* consequent */
+	  builder.field("consequent",rule.consequent)
+	    
+	  /* rule parameters */
+	  builder.field("support",rule.support)
+	  builder.field("confidence",rule.confidence)
+
+	  builder.field("weight",rule.weight)
+	  
+	  builder.endObject()
+	
+	}
+	          
+    builder.endArray()
+    
+  }
+  
+  private def addPatterns(builder:XContentBuilder,patterns:String) {
    
     val data = Serializer.deserializePatterns(patterns)
 
-    builder.startObject("result")
-	builder.field("total", data.items.size)
-	  
+    builder.field("total", data.items.size)
 	builder.startArray("data")    
+	
     for (record <- data.items) {
       
       builder.startObject()
@@ -360,47 +405,16 @@ class GetResponseBuilder extends ResponseBuilder {
 	}
 	          
     builder.endArray()
-	builder.endObject()
     
   }
   
-  private def appendPurchase(builder:XContentBuilder,purchases:String) {
-    
-    val data = Serializer.deserializePurchases(purchases)
-    
-    builder.startObject("result")
-	builder.field("total", data.items.size)
-	
-	builder.startArray("data")	  
-	for (record <- data.items) {
-	  
-	  builder.startObject()
-	  /* site */
-      builder.field("site",record.site)
-      /* user */
-      builder.field("user",record.user)
-	  /* timestamp */
-      builder.field("timestamp",record.timestamp)
-      /* amount */
-      builder.field("amount",record.amount)
-	  
-	  builder.endObject()
-	
-	}
-	          
-    builder.endArray()
-	builder.endObject()
-    
-  }
-  
-  private def appendRules(builder:XContentBuilder,rules:String) {
+  private def addRules(builder:XContentBuilder,rules:String) {
      
     val data = Serializer.deserializeRules(rules)
     
-    builder.startObject("result")
-	builder.field("total", data.items.size)
-	
+	builder.field("total", data.items.size)	
 	builder.startArray("data")	  
+	
 	for (rule <- data.items) {
 	  
 	  builder.startObject()
@@ -424,29 +438,44 @@ class GetResponseBuilder extends ResponseBuilder {
 	}
 	          
     builder.endArray()
-	builder.endObject()
     
   }
   
-  private def appendPrediction(builder:XContentBuilder,prediction:String) = {
-
-    builder.startObject("result")
-    /* prediction */
-    builder.field("prediction",prediction)
-
-    builder.endObject()
+  private def addPurchase(builder:XContentBuilder,purchases:String) {
+    
+    val data = Serializer.deserializePurchases(purchases)
+    
+	builder.field("total", data.items.size)	
+	builder.startArray("data")	  
+	
+	for (record <- data.items) {
+	  
+	  builder.startObject()
+	  /* site */
+      builder.field("site",record.site)
+      /* user */
+      builder.field("user",record.user)
+	  /* timestamp */
+      builder.field("timestamp",record.timestamp)
+      /* amount */
+      builder.field("amount",record.amount)
+	  
+	  builder.endObject()
+	
+	}
+	          
+    builder.endArray()
     
   }
   
-  private def appendSequences(builder:XContentBuilder,sequences:String) = {
+  private def addSequences(builder:XContentBuilder,sequences:String) = {
    
     val data = Serializer.deserializeClusteredSequences(sequences)
 
-    builder.startObject("result")
 	builder.field("total", data.items.size)
-	  
 	builder.startArray("data")    
-    for (record <- data.items) {
+
+	for (record <- data.items) {
       
       builder.startObject()
       
@@ -476,7 +505,6 @@ class GetResponseBuilder extends ResponseBuilder {
     }
 	  
     builder.endArray()	  
-	builder.endObject()
 
   }
   

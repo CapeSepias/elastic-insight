@@ -31,7 +31,7 @@ import org.elasticsearch.river.RiversModule
 
 import de.kp.elastic.insight.module.{AnalyticsModule}
 
-import de.kp.elastic.insight.rest.{GetAction,IndexAction,RegisterAction,StatusAction,TrackAction,TrainAction}
+import de.kp.elastic.insight.rest._
 import de.kp.elastic.insight.service.AnalyticsService
 
 class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
@@ -43,35 +43,56 @@ class AnalyticsPlugin(val settings:Settings) extends AbstractPlugin {
   override def description():String = {
     "Plugin that brings predictive analytics to Elasticsearch";
   }
-  /**
-   * REST API
-   */
+
   def onModule(module:RestModule) {
-    	
+    
+    /********************** METADATA MANAGEMENT ***********************/
+    
     /*
-     * Retrieve result information from remote analytics service
+     * A 'fields' request supports the retrieval of the field or metadata 
+     * specificiations that are associated with a certain training task. 
+     * The approach actually supported, enables the registration of field 
+     * specifications on a per 'uid' basis, i.e. each task may have its own 
+     * fields. Requests that have to refer to the same fields must provide 
+     * the SAME 'uid'
      */
-    module.addRestAction(classOf[GetAction])
-     /*
-     * Create index
-     */
-   	module.addRestAction(classOf[IndexAction])
-     /*
-     * Register metadata descriptions
+    module.addRestAction(classOf[FieldAction])
+    /*
+     * A 'register' request supports the registration of a field or metadata 
+     * specification that describes the fields used to span the training dataset.
      */
    	module.addRestAction(classOf[RegisterAction])
-   /*
-     * Retrieve status information from remote analytics service
+    
+    /********************** TRACKING MANAGEMENT ***********************/
+
+    /*
+     * 'index' and 'track' requests refer to the tracking functionality of
+     * Predictiveworks; while 'index' prepares a certain Elasticsearch index, 
+     * 'track' is used to gather training data.
+     */
+   	module.addRestAction(classOf[IndexAction])
+    module.addRestAction(classOf[TrackAction])
+    
+    /********************** STATUS MANAGEMENT *************************/
+
+    /*
+     * A 'status' request supports the retrieval of the status with respect 
+     * to a certain training task (uid). The latest status or all stati of a 
+     * certain task are returned.
      */
    	module.addRestAction(classOf[StatusAction])
+    
+    /********************** MODEL MANAGEMENT **************************/
     /*
-     * Collect training data
+     * A 'params' request supports the retrieval of the parameters
+     * used for a certain model training task
      */
-    module.addRestAction(classOf[TrackAction])
-    /*
-     * Train predictive models
-     */
+    module.addRestAction(classOf[ParamAction])
     module.addRestAction(classOf[TrainAction])
+    	
+    /********************** INSIGHT API *******************************/
+
+    module.addRestAction(classOf[GetAction])
     
   }
 

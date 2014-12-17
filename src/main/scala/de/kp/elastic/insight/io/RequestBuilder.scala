@@ -18,7 +18,7 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import de.kp.elastic.insight.model._
+import de.kp.spark.core.model._
 
 abstract class RequestBuilder {
 

@@ -18,6 +18,9 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.exception.AnalyticsException
 
@@ -33,122 +36,96 @@ class RegisterRequestBuilder extends RequestBuilder {
       throw new AnalyticsException("No <service> found.")
       
     }
+    val subject = params("subject").asInstanceOf[String]
+    val task = "register:" + subject
     
-    val metadata = params("metadata").asInstanceOf[String]
-    if (Fields.isMetadata(metadata) == false) {
-      throw new AnalyticsException("No <metadata> found.")
-      
-    }
-    
-    /* Build request data */
     val data = HashMap.empty[String,String]    
-    data += "uid" -> params("uid").asInstanceOf[String]
+    data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
+
+    data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
+    data += Names.REQ_NAME -> params(Names.REQ_NAME).asInstanceOf[String]
 
     service match {
 
 	  case "association" => {
 	    
-	    if (metadata != Fields.FIELD) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    val topics = List("item")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    appendMetaItem(params,data)
-	    new ServiceRequest(service,"register",data.toMap)  
+	    val reqdata = data ++ appendMetaItem(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
 	  
 	  }
 	  
 	  case "context" => {
 	    
-	    if (metadata != Fields.FEATURE) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    val topics = List("feature")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
-	    appendMetaNames(params,data)
-	    new ServiceRequest(service,"register",data.toMap)  
+        val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
 
 	  }
       case "decision" => {
 	    
-	    if (metadata != Fields.FEATURE) throw new AnalyticsException("Metadata are not valid for the service provided.")
-	    
-	    appendMetaNames(params,data)
-	    appendMetaTypes(params,data)
-	    
-	    new ServiceRequest(service,"register",data.toMap)  
+	    val topics = List("feature")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
-      }
+        val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
+
+     }
       case "intent" => {
 	    
-	    metadata match {	      
-
-	      case Fields.LOYALTY => {
+	    val topics = List("amount")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	        appendMetaAmount(params,data)
-	        new ServiceRequest(service,"register:loyalty",data.toMap)  
-	        
-	      }
-	      case Fields.PURCHASE => {
-	    
-	        appendMetaAmount(params,data)
-	        new ServiceRequest(service,"register:purchase",data.toMap)  
-	        
-	      }
-	      
-	      case _ => throw new AnalyticsException("Metadata are not valid for the service provided.")
-	      
-	    }
+	    val reqdata = data ++ appendMetaAmount(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
       
       }
 	  case "outlier" => {
 	    
-	    metadata match {
+	    val topics = List("feature","product")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+	    
+	    if (subject == "feature") {
+
+	      val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case Fields.FEATURE => {
+	    } else {
 	    
-	        appendMetaNames(params,data)
-	        appendMetaTypes(params,data)
-	    
-	        new ServiceRequest(service,"register:features",data.toMap)  
-	        
-	        
-	      }
-	      case Fields.SEQUENCE => {
-	    
-	        appendMetaExtendedItem(params,data)
-	        new ServiceRequest(service,"register:sequences",data.toMap)  
-	        
-	      }
+	      val reqdata = data ++ appendMetaProduct(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case _ => throw new AnalyticsException("Metadata are not valid for the service provided.")
-	    
 	    }
 	    
 	  }
 	  case "series" => {
 	    
-	    if (metadata != Fields.FIELD) throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    val topics = List("item")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    appendMetaItem(params,data)
-	    new ServiceRequest(service,"register",data.toMap)  
+	    val reqdata = data ++ appendMetaItem(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
 	  
 	  }
 
 	  case "similarity" => {
 	    
-	    metadata match {
+	    val topics = List("feature","sequence")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+	    
+	    if (subject == "feature") {
 
-	      case Fields.FEATURE => {
-	    
-	        appendMetaNames(params,data)
-	        appendMetaTypes(params,data)
-	    
-	        new ServiceRequest(service,"register:features",data.toMap)  
-	        
-	      }	
-	      case Fields.SEQUENCE => {
-	    
-	        appendMetaItem(params,data)
-	        new ServiceRequest(service,"register:sequences",data.toMap)  
-	        
-	      }
+	      val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case _ => throw new AnalyticsException("Metadata are not valid for the service provided.")
+	    } else {
+	    
+	      val reqdata = data ++ appendMetaSequence(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    }
 	    
@@ -168,15 +145,42 @@ class RegisterRequestBuilder extends RequestBuilder {
     
   }
   
-  private def appendMetaAmount(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendMetaAmount(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
          
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "amount" -> params("amount").asInstanceOf[String]
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.AMOUNT_FIELD -> params(Names.AMOUNT_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid metadata description for the provided service.")
+      }
+    
+    }
+
+  }
+
+  private def appendMetaItem(params:Map[String,Any]):HashMap[String,String] = {
+ 
+     val data = HashMap.empty[String,String]
+     try {
+         
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
+
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
+
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      data += Names.SCORE_FIELD -> params(Names.SCORE_FIELD).asInstanceOf[String]
+      
+      data
       
     } catch {
       
@@ -188,18 +192,20 @@ class RegisterRequestBuilder extends RequestBuilder {
 
   }
 	        
-  private def appendMetaExtendedItem(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendMetaProduct(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
          
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
 
-      data += "item" -> params("item").asInstanceOf[String]
-      data += "price" -> params("price").asInstanceOf[String]
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      data += Names.PRICE_FIELD -> params(Names.PRICE_FIELD).asInstanceOf[String]
+      
+      data
       
     } catch {
       
@@ -211,17 +217,20 @@ class RegisterRequestBuilder extends RequestBuilder {
 
   }
 
-  private def appendMetaItem(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendMetaSequence(params:Map[String,Any]):HashMap[String,String] = {
  
-    try {
+     val data = HashMap.empty[String,String]
+     try {
          
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
 
-      data += "item" -> params("item").asInstanceOf[String]
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      data += Names.SCORE_FIELD -> params(Names.SCORE_FIELD).asInstanceOf[String]
+      
+      data
       
     } catch {
       
@@ -230,15 +239,18 @@ class RegisterRequestBuilder extends RequestBuilder {
       }
     
     }
-
+  
   }
   
-  private def appendMetaNames(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendMetaNames(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
               
-      val names = params("names").asInstanceOf[List[String]]
-      data += "names" -> names.mkString(",")
+      val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
+      data += Names.REQ_NAMES -> names.mkString(",")
+      
+      data
       
     } catch {
       
@@ -250,12 +262,15 @@ class RegisterRequestBuilder extends RequestBuilder {
 
   }
  
-  private def appendMetaTypes(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendMetaTypes(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
               
-      val types = params("types").asInstanceOf[List[String]]
-      data += "names" -> types.mkString(",")
+      val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
+      data += Names.REQ_TYPES -> types.mkString(",")
+      
+      data
       
     } catch {
       

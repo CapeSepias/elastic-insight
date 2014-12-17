@@ -18,20 +18,12 @@ package de.kp.elastic.insight.model
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.model._
+
 import org.json4s._
 
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read,write}
-
-/**
- * ServiceRequest and ServiceResponse describe the common data structures used for
- * Akka-based communication with the different predictive engines of PredictiveWorks.
- */
-case class ServiceRequest(
-  service:String,task:String,data:Map[String,String])
-
-case class ServiceResponse(
-  service:String,task:String,data:Map[String,String],status:String)
 
 case class Behavior(site:String,user:String,states:List[String])
 
@@ -82,21 +74,9 @@ case class WeightedRules(site:String,user:String,items:List[WeightedRule])
 
 case class MultiRelations(items:List[WeightedRules])
 
-case class Rule (
-  antecedent:List[Int],consequent:List[Int],support:Int,confidence:Double)
+object ResponseStatus extends BaseStatus
 
-case class Rules(items:List[Rule])
-
-object ResponseStatus {
-  
-  val FAILURE:String = "failure"
-  val SUCCESS:String = "success"
-    
-}
-
-object Serializer {
-    
-  implicit val formats = Serialization.formats(NoTypeHints)
+object Serializer extends BaseSerializer {
   
   def deserializeBehavior(behaviors:String):Behaviors = read[Behaviors](behaviors)
 
@@ -111,15 +91,12 @@ object Serializer {
   def deserializeBDetections(detections:String):BDetections = read[BDetections](detections)
   def deserializeFDetections(detections:String):FDetections = read[FDetections](detections)
  
-  def deserializeRules(rules:String):Rules = read[Rules](rules)
   def deserializeMultiRelations(relations:String):MultiRelations = read[MultiRelations](relations)
    
   def deserializePatterns(patterns:String):Patterns = read[Patterns](patterns)
+  
+  def serializePurchases(purchases:Purchases):String = write(purchases)
   def deserializePurchases(purchases:String):Purchases = read[Purchases](purchases)
- 
-  def serializeRequest(request:ServiceRequest):String = write(request)  
-  def deserializeResponse(response:String):ServiceResponse = read[ServiceResponse](response)
- 
   
 }
 
@@ -352,40 +329,3 @@ object Algorithms {
   def isAlgorithm(algorithm:String):Boolean = algorithms.contains(algorithm)
   
 }
-
-object Elements {
-  
-  val AMOUNT:String = "amount"
-  
-  val FEATURE:String = "feature"
-
-  val ITEM:String = "item"
-  
-  val RULE:String = "rule"
-    
-  val SEQUENCE:String = "sequence"
-
-  val elements = List(AMOUNT,FEATURE,ITEM,RULE,SEQUENCE)
-  
-  def isElement(element:String):Boolean = elements.contains(element)
-  
-}
-
-object Fields {
-  
-  val FEATURE:String = "feature"
-  
-  val FIELD:String = "field"
-
-  val LOYALTY:String = "loyalty"
-    
-  val PURCHASE:String = "purchase"
-    
-  val SEQUENCE:String = "sequence"
-
-  val fields = List(FEATURE,FIELD,LOYALTY,PURCHASE,SEQUENCE)
-  
-  def isMetadata(field:String):Boolean = fields.contains(field)
-  
-}
-

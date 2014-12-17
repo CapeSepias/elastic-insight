@@ -27,32 +27,35 @@ import de.kp.elastic.insight.exception.AnalyticsException
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
-class StatusRequestBuilder extends RequestBuilder {
+class SimpleRequestBuilder(val task:String) extends RequestBuilder {
 
   override def build(params:Map[String,Any]):ServiceRequest = {
-        
+    
+    /* Check whether service is supported */
     val service = params("service").asInstanceOf[String]
     if (Services.isService(service) == false) {
       throw new AnalyticsException("No <service> found.")
       
     }
     
-    /* Build request data */
-    val data = HashMap.empty[String,String]   
-
-    data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
-    data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
- 
-    val topics = List("latest","all")
-
-    val subject = params("subject").asInstanceOf[String]
-    if (topics.contains(subject) == false) {
-      throw new AnalyticsException("No <subject> found.")
-      
-    }
-    val task = "status:" + subject
-    new ServiceRequest(service,task,data.toMap)
+    /*
+     * Request parameters for a 'simple' request:
+     * 
+     * - site (String)
+     * - uid (String)
+     * - name (String)
+     */
     
+    /* Build request data */
+    val data = HashMap.empty[String,String]
+    
+    data += Names.REQ_UID -> params( Names.REQ_UID).asInstanceOf[String]
+    
+    data += Names.REQ_SITE -> params( Names.REQ_SITE).asInstanceOf[String]
+    data += Names.REQ_NAME -> params( Names.REQ_NAME).asInstanceOf[String]
+    
+    new ServiceRequest(service,task,data.toMap)
+
   }
 
 }

@@ -24,15 +24,15 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import de.kp.elastic.insight.io.{IndexRequestBuilder,IndexResponseBuilder}
+import de.kp.elastic.insight.io._
 
 class IndexAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
 
   logger.info("Add IndexAction module")  
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/index/{service}/{topic}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/index/{service}/{subject}", this)
 
   private val requestBuilder  = new IndexRequestBuilder()
-  private val responseBuilder = new IndexResponseBuilder()
+  private val responseBuilder = new SimpleResponseBuilder()
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 

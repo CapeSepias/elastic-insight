@@ -24,15 +24,15 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import de.kp.elastic.insight.io.{RegisterRequestBuilder,RegisterResponseBuilder}
+import de.kp.elastic.insight.io._
 
 class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
 
   logger.info("Add RegisterAction module") 
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{metadata}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{subject}", this)
 
   private val requestBuilder  = new RegisterRequestBuilder()
-  private val responseBuilder = new RegisterResponseBuilder()
+  private val responseBuilder = new SimpleResponseBuilder()
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 

@@ -24,7 +24,7 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.common.inject.Inject
 import org.elasticsearch.common.settings.Settings
 
-import de.kp.elastic.insight.io.{TrainRequestBuilder,TrainResponseBuilder}
+import de.kp.elastic.insight.io._
 
 class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
 
@@ -32,7 +32,7 @@ class TrainAction @Inject()(settings:Settings,client:Client,controller:RestContr
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/train/{service}", this)
   
   private val requestBuilder  = new TrainRequestBuilder()
-  private val responseBuilder = new TrainResponseBuilder()
+  private val responseBuilder = new SimpleResponseBuilder()
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 

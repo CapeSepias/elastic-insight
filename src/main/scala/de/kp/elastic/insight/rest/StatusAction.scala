@@ -36,7 +36,16 @@ import de.kp.elastic.insight.io.{StatusRequestBuilder,StatusResponseBuilder}
 class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
 
   logger.info("Add StatusAction module")
-  controller.registerHandler(RestRequest.Method.GET,"/_analytics/status/{service}/{uid}", this)
+  controller.registerHandler(RestRequest.Method.GET,"/_analytics/status/{service}/{subject}", this)
+  /**
+   * Request parameters for the 'status' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * 
+   * 'subject' distinguishes between 'latest' & 'all'
+   * 
+   */
  
   private val requestBuilder = new StatusRequestBuilder()
   private val responseBuilder = new StatusResponseBuilder()

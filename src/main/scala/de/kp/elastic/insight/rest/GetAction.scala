@@ -29,7 +29,7 @@ import de.kp.elastic.insight.io.{GetRequestBuilder,GetResponseBuilder}
 class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
 
   logger.info("Add GetAction module")  
-  controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}", this)
+  controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}/{subject}", this)
 
   private val requestBuilder  = new GetRequestBuilder()
   private val responseBuilder = new GetResponseBuilder()

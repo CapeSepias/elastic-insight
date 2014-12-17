@@ -18,6 +18,9 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.exception.AnalyticsException
 
@@ -34,149 +37,132 @@ class IndexRequestBuilder extends RequestBuilder {
       
     }
     
-    val topic = params("topic").asInstanceOf[String]
-    if (Elements.isElement(topic) == false) {
-      throw new AnalyticsException("No indexing topic found.")
-      
-    }
+    val subject = params("subject").asInstanceOf[String]
+    val task = "index:" + subject
     
-    /* Build request data */
     val data = HashMap.empty[String,String]    
-    data += "uid" -> params("uid").asInstanceOf[String]
+    data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
 
+    data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
+    data += Names.REQ_NAME -> params(Names.REQ_NAME).asInstanceOf[String]
+
+
+    data += Names.REQ_INDEX -> params(Names.REQ_INDEX).asInstanceOf[String]
+    data += Names.REQ_TYPE  -> params(Names.REQ_TYPE).asInstanceOf[String]
+    
     service match {
 
 	  case "association" => {
 	    
-	    topic match {
+	    val topics = List("item","rule")
+	    if (topics.contains(subject)) {
+	      new ServiceRequest(service,task,data.toMap) 
 	      
-	      case Elements.ITEM => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:item",data.toMap)  	        
-	      }	        
-	      case Elements.RULE => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:rule",data.toMap)  
-	      }	      
-	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	    
+	    } else {
+	      throw new AnalyticsException("No <subject> found.")
 	    }
 	  
 	  }
 	  
 	  case "context" => {
-	    
-	    if (topic != Elements.FEATURE) throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	    
-	    appendMetaNames(params,data)
-	    appendMetaTypes(params,data)
+    
+        val topics = List("feature")
+        if (topics.contains(subject)) {
+            
+          val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
+          data += Names.REQ_NAMES -> names.mkString(",")
+      
+          val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
+          data += Names.REQ_TYPES -> types.mkString(",")
 
-	    new ServiceRequest(service,"index",data.toMap)  
+          new ServiceRequest(service,task,data.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
+	    }
 
 	  }
       case "decision" => {
-	    
-	    if (topic != Elements.FEATURE) throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	    
-	    appendMetaNames(params,data)
-	    appendMetaTypes(params,data)
-	    
-	    new ServiceRequest(service,"index",data.toMap)  
+    
+        val topics = List("feature")
+        if (topics.contains(subject)) {
+            
+          val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
+          data += Names.REQ_NAMES -> names.mkString(",")
+      
+          val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
+          data += Names.REQ_TYPES -> types.mkString(",")
+
+          new ServiceRequest(service,task,data.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
+	    }
 
       }
       case "intent" => {
 	    
-	    topic match {	      
-
-	      case Elements.AMOUNT => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:amount",data.toMap)  
-	      }	      
-	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
+	    val topics = List("amount")
+	    if (topics.contains(subject)) {
+	      new ServiceRequest(service,task,data.toMap) 
 	      
+	    } else {
+	      throw new AnalyticsException("No <subject> found.")
 	    }
       
       }
 	  case "outlier" => {
+   
+        val topics = List("feature","product")
+        if (topics.contains(subject)) {
 	    
-	    topic match {
-	      
-	      case Elements.FEATURE => {
-	    
-	        appendMetaNames(params,data)
-	        appendMetaTypes(params,data)
-	    
-	        new ServiceRequest(service,"index:feature",data.toMap)  
-	        
-	        
-	      }
-	      case Elements.SEQUENCE => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:sequence",data.toMap)  
-	      }
-	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	    
+          if (subject == "feature") {
+            
+            val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
+            data += Names.REQ_NAMES -> names.mkString(",")
+      
+            val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
+            data += Names.REQ_TYPES -> types.mkString(",")
+
+          }
+
+          new ServiceRequest(service,task,data.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
 	    }
 	    
 	  }
 	  case "series" => {
-
-	    topic match {
+	    
+	    val topics = List("item","rule")
+	    if (topics.contains(subject)) {
+	      new ServiceRequest(service,task,data.toMap) 
 	      
-	      case Elements.ITEM => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:item",data.toMap)  	        
-	      }
-	        
-	      case Elements.RULE => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:rule",data.toMap)  
-	      }
-	      
-	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
+	    } else {
+	      throw new AnalyticsException("No <subject> found.")
 	    }
 	    
 	  }
-
 	  case "similarity" => {
+    
+        val topics = List("feature","sequence")
+        if (topics.contains(subject)) {
 	    
-	    topic match {
+          if (subject == "feature") {
+            
+            val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
+            data += Names.REQ_NAMES -> names.mkString(",")
+      
+            val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
+            data += Names.REQ_TYPES -> types.mkString(",")
 
-	      case Elements.FEATURE => {
-	    
-	        appendMetaNames(params,data)
-	        appendMetaTypes(params,data)
-	    
-	        new ServiceRequest(service,"index:feature",data.toMap)  
-	        
-	      }	
-	      case Elements.SEQUENCE => {
-            /* 
-             * The schema fields are predefined and no additional
-             * information must be provided externally
-             */ 
-	        new ServiceRequest(service,"index:sequence",data.toMap)  	        
-	      }
-	      case _ => throw new AnalyticsException("Indexing topic is not valid for the service provided.")
-	      
+          }
+
+          new ServiceRequest(service,task,data.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
 	    }
 	    
 	  }
@@ -193,41 +179,6 @@ class IndexRequestBuilder extends RequestBuilder {
 	  
     }
     
-  }
-  
-  /** Names & Types are used by Context, Decision Analysis, Outlier Detection and Similarity Analysis **/
-  private def appendMetaNames(params:Map[String,Any],data:HashMap[String,String]) {
- 
-    try {
-              
-      val names = params("names").asInstanceOf[List[String]]
-      data += "names" -> names.mkString(",")
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
-  }
- 
-  private def appendMetaTypes(params:Map[String,Any],data:HashMap[String,String]) {
- 
-    try {
-              
-      val types = params("types").asInstanceOf[List[String]]
-      data += "types" -> types.mkString(",")
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
   }
  
 }

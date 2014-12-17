@@ -18,20 +18,20 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.elasticsearch.common.xcontent.XContentFactory
-import org.elasticsearch.common.xcontent.XContentBuilder
+import org.elasticsearch.common.xcontent.{XContentFactory,XContentBuilder}
 
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
 import de.kp.elastic.insight.model._
 
-class StatusResponseBuilder extends ResponseBuilder {
+class ParamResponseBuilder extends ResponseBuilder {
 
-  def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
-      
+  override def build(res:ServiceResponse,pretty:Boolean):XContentBuilder = {
+     
     val builder = XContentFactory.jsonBuilder()
 	if (pretty) builder.prettyPrint().lfAtEnd()
+
 	/*
 	 * Build header of response object, which contains always the same
 	 * components
@@ -56,23 +56,21 @@ class StatusResponseBuilder extends ResponseBuilder {
       
     } else {
       
-      val statuses = Serializer.deserializeStatusList(res.data(Names.REQ_RESPONSE)).items
+      val params = Serializer.deserializeParams(res.data(Names.REQ_RESPONSE)).items
 
       builder.startObject("result") /* begin result */
-	  builder.field("total", statuses.size)
+	  builder.field("total", params.size)
 	  
 	  builder.startArray("data")    
-      for (entry <- statuses) {
+      for (param <- params) {
       
         builder.startObject()
-        /* service */
-        builder.field("service",entry.service)
+        /* name */
+        builder.field("name",param.name)
         /* datatype */
-        builder.field("task",entry.task)
-        /* status */
-        builder.field("status",entry.status)      
-        /* timestamp */
-        builder.field("timestamp",entry.timestamp)      
+        builder.field("datatype",param.datatype)
+        /* value */
+        builder.field("value",param.value)      
         builder.endObject()
       
       }
@@ -86,5 +84,4 @@ class StatusResponseBuilder extends ResponseBuilder {
     builder
 
   }
-
 }

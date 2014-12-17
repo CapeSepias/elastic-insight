@@ -19,7 +19,7 @@ package de.kp.elastic.insight.io
 */
 
 import org.elasticsearch.common.xcontent.XContentBuilder
-import de.kp.elastic.insight.model._
+import de.kp.spark.core.model._
 
 abstract class ResponseBuilder {
 

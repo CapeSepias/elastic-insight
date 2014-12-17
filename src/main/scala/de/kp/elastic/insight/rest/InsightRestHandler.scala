@@ -29,6 +29,8 @@ import org.elasticsearch.common.xcontent.XContentFactory
 
 import org.elasticsearch.rest.RestStatus.OK
 
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.context.AnalyticsContext
 

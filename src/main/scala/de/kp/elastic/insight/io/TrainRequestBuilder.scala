@@ -18,6 +18,9 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.exception.AnalyticsException
 
@@ -34,39 +37,24 @@ class TrainRequestBuilder extends RequestBuilder {
       
     }
     
-    val data = HashMap.empty[String,String]
-    /*
-     * Determine whether common mandatory parameters are provided with
-     * the train request; every request must be designated by a unique
-     * identifier. This parameter is also used as a reference for sub 
-     * sequent requests.
-     */
-    if (params.contains("uid") == false) {
-      throw new AnalyticsException("Not enough parameters to train dataset: <uid> is missing.")              
-    }
+    val task = "train"
+     
+    val data = HashMap.empty[String,String]   
+    try {
     
-    data += "uid" -> params("uid").asInstanceOf[String]
+      data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
+
+      data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
+      data += Names.REQ_NAME -> params(Names.REQ_NAME).asInstanceOf[String]
+ 
+      data += Names.REQ_SOURCE -> params(Names.REQ_SOURCE).asInstanceOf[String]
+      data += Names.REQ_ALGORITHM -> params(Names.REQ_ALGORITHM).asInstanceOf[String]
     
-    /*
-     * Determine whether the request specifies a valid data source; whether
-     * this specific data source is also valid for the respective service is
-     * evaluated by the associated predictive engine
-     */
-    if (params.contains("source") == false) {
-      throw new AnalyticsException("Not enough parameters to train dataset: <source> is missing.")                    
-    
-    } else {
-      
-      val source = params("source").asInstanceOf[String]
-      if (Sources.isSource(source) == false) {
-        throw new AnalyticsException("Unknown <source> provided.")                            
-      }
-      
-      data += "source" -> source
-      
+    } catch {
+      case e:Exception => throw new AnalyticsException("Not enough parameters to train dataset.") 
     }
 
-    val supported = List("algorithm","source","uid")
+    val supported = List(Names.REQ_ALGORITHM,Names.REQ_NAME,Names.REQ_SITE,Names.REQ_SOURCE,Names.REQ_UID)
     /*
      * Actually the validation of all other parameters is performed
      * by the different predictive engines individually
@@ -86,7 +74,7 @@ class TrainRequestBuilder extends RequestBuilder {
       
     })
     
-    new ServiceRequest(service,"train",data.toMap)
+    new ServiceRequest(service,task,data.toMap)
     
   }
   

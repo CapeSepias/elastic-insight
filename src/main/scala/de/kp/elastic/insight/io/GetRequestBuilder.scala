@@ -18,6 +18,9 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.exception.AnalyticsException
 
@@ -34,134 +37,164 @@ class GetRequestBuilder extends RequestBuilder {
       
     }
 
-    val concept = params("concept").asInstanceOf[String]
-    if (Concepts.isConcept(concept) == false) {
-      throw new AnalyticsException("No <concept> found.")
-    }
+    val subject = params("subject").asInstanceOf[String]
     
-    val task = "get:" + concept
-    
-    /* Build request data */
-    val data = HashMap.empty[String,String]
-    
-    data += "uid" -> params("uid").asInstanceOf[String]
+    val data = HashMap.empty[String,String]    
+    data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
+
+    data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
+    data += Names.REQ_NAME -> params(Names.REQ_NAME).asInstanceOf[String]
    
     service match {
       
       case Services.ASSOCIATION => {
 
-        concept match {
+        val topics = List("antecedent","consequent","crule","rule","transaction")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+
+        if (List("antecedent","consequent").contains(subject)) {
+
+          val items = params("items").asInstanceOf[List[Int]]
+          data += Names.REQ_ITEMS -> items.mkString(",")
           
-          case Concepts.ANTECEDENT => {
- 
-            if (params.contains("items") == false) {
-              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
-            }
-              
-            val items = params("items").asInstanceOf[List[Int]]
-            data += "items" -> items.mkString(",")
-            
-          }
-          
-          case Concepts.CONSEQUENT => {
- 
-            if (params.contains("items") == false) {
-              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
-            }
-              
-            val items = params("items").asInstanceOf[List[Int]]
-            data += "items" -> items.mkString(",")
-            
-          }
-          
-          case _ => {/* do nothing */}          
-        
         }
-         
+        
+        if (List("transaction").contains(subject)) {
+
+          val users = params("users").asInstanceOf[List[String]]
+          data += Names.REQ_USERS -> users.mkString(",")
+          
+        }
+        
+        val task = "get:" + subject
+        new ServiceRequest(service, task, data.toMap)
+
       }
       case Services.CONTEXT => {
-         
-        if (params.contains("features") == false) {
-          throw new AnalyticsException("Not enough parameters to retrieve predictions.")                        
+        /*
+         * Context Analysis does not support 'get' requests directly; therefore
+         * these requests are mapped to 'predict' or 'similar'
+         */
+        val topics = List("prediction","similars")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+
+        if (subject == "prediction") {
+
+          val features = params("features").asInstanceOf[List[Double]]
+          data += Names.REQ_FEATURES -> features.mkString(",")
+          
+          val task = "predict:feature"
+          new ServiceRequest(service, task, data.toMap)
+            
+        } else {
+          
+          val total = params("total").asInstanceOf[Int]
+          data += Names.REQ_TOTAL -> total.toString
+          
+          if (params.contains("columns")) {
+            
+            val columns = params("columns").asInstanceOf[List[Int]]
+            data += Names.REQ_COLUMNS -> columns.mkString(",")
+          
+          } else {
+          
+            val start = params("start").asInstanceOf[Int]
+            data += Names.REQ_START -> start.toString
+          
+            val end = params("end").asInstanceOf[Int]
+            data += Names.REQ_END -> end.toString
+             
+          }
+          
+          val task = "similar:feature"
+          new ServiceRequest(service, task, data.toMap)
+          
         }
-        
-        val features = params("features").asInstanceOf[List[String]]
-        data += "features" -> features.mkString(",")
+        throw new AnalyticsException("Context Analysis does not support get requests.")                        
        
       }
       case Services.DECISION => {
-        
-        if (params.contains("features") == false) {
-          throw new AnalyticsException("Not enough parameters to retrieve predictions.")                        
-        }
+
+        val topics = List("prediction")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
         
         val features = params("features").asInstanceOf[List[String]]
-        data += "features" -> features.mkString(",")
+        data += Names.REQ_FEATURES -> features.mkString(",")
+        
+        val task = "get:feature"
+        new ServiceRequest(service, task, data.toMap)
 
       }
       case Services.INTENT => {
-        /*
-         * Intent recognition does not require any input parameters; the analysis
-         * is performed on the data provided by the respective data sources
-         */
-      }
-      case Services.OUTLIER => {
-        /*
-         * Outlier detection does not require any input parameters; the analysis
-         * is performed on the data provided by the respective data sources
-         */
-      }
-      case Services.SERIES => {
-        /*
-         * Series analysis requires input parameters for 'follow' requests;
-         * the input either specifies antecedents for consequent retrieval 
-         * or vice versa.
-         */
-        concept match {
+
+        val topics = List("loyalty","purchase")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+
+        val rawset = params("purchases").asInstanceOf[List[Map[String,Any]]]
+        val purchases = rawset.map(record => {
           
-          case Concepts.ANTECEDENT => {
- 
-            if (params.contains("items") == false) {
-              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
-            }
-              
-            val items = params("items").asInstanceOf[List[Int]]
-            data += "items" -> items.mkString(",")
-            
-          }
+          val site = record("site").asInstanceOf[String]
+          val user = record("user").asInstanceOf[String]
+
+          val timestamp = record("timestamp").asInstanceOf[Long]
+          val amount = record("amount").asInstanceOf[Float]
+
+          Purchase(site,user,timestamp,amount)
           
-          case Concepts.CONSEQUENT => {
- 
-            if (params.contains("items") == false) {
-              throw new AnalyticsException("Not enough parameters to retrieve followers.")              
-            }
-              
-            val items = params("items").asInstanceOf[List[Int]]
-            data += "items" -> items.mkString(",")
-            
-          }
-          
-          case _ => {/* do nothing */}          
-                 
-        }
+        })
+
+        data += "purchases" -> Serializer.serializePurchases(Purchases(purchases))
+        
+        val task = "get:" + subject
+        new ServiceRequest(service, task, data.toMap)
         
       }
+      case Services.OUTLIER => {
+
+        val topics = List("feature","product")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+        
+        val task = "get:" + subject
+        new ServiceRequest(service, task, data.toMap)
+
+      }
+      case Services.SERIES => {
+    
+        val topics = List("antecedent","consequent","pattern","rule")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+
+        if (List("antecedent","consequent").contains(subject)) {
+
+          val items = params("items").asInstanceOf[List[Int]]
+          data += Names.REQ_ITEMS -> items.mkString(",")
+          
+        }
+         
+        val task = "get:" + subject
+        new ServiceRequest(service, task, data.toMap)
+       
+      }
       case Services.SIMILARITY => {
-        /*
-         * Similarity analysis does not require any input parameters; the analysis
-         * is performed on the data provided by the respective data sources
-         */
+    
+        val topics = List("feature","sequence")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+        
+        val task = "get:" + subject
+        new ServiceRequest(service, task, data.toMap)
+
       }
       case Services.SOCIAL => {
         /* not yet implemented */
+        null
       }
       case Services.TEXT => {
-         /* not yet implemented */       
+         /* not yet implemented */  
+        null
       }
-      case _ => {/* do nothing */}
+      case _ => throw new AnalyticsException("No <service> found.")
+
     
     }
-    new ServiceRequest(service, task, data.toMap)
 
   }
 

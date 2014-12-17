@@ -18,6 +18,9 @@ package de.kp.elastic.insight.io
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+import de.kp.spark.core.model._
+
 import de.kp.elastic.insight.model._
 import de.kp.elastic.insight.exception.AnalyticsException
 
@@ -34,109 +37,108 @@ class TrackRequestBuilder extends RequestBuilder {
       
     }
     
-    val topic = params("topic").asInstanceOf[String]
-    if (Elements.isElement(topic) == false) {
-      throw new AnalyticsException("No indexing topic found.")
-      
-    }
-    
-    /* Build request data */
+    val subject = params("subject").asInstanceOf[String]
+    val task = "track:" + subject
+     
     val data = HashMap.empty[String,String]    
-    data += "uid" -> params("uid").asInstanceOf[String]
+    data += Names.REQ_UID -> params(Names.REQ_UID).asInstanceOf[String]
+
+    data += Names.REQ_SITE -> params(Names.REQ_SITE).asInstanceOf[String]
+    data += Names.REQ_NAME -> params(Names.REQ_NAME).asInstanceOf[String]
+
+
+    data += Names.REQ_INDEX -> params(Names.REQ_INDEX).asInstanceOf[String]
+    data += Names.REQ_TYPE  -> params(Names.REQ_TYPE).asInstanceOf[String]
 
     service match {
 
 	  case "association" => {
 	    
-	    if (topic != Elements.ITEM) throw new AnalyticsException("Tracking topic is not valid for the service provided.")
+	    val topics = List("item")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    appendItem(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
+	    val reqdata = data ++ appendItem(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
 	  
 	  }
 	  
 	  case "context" => {
 	    
-	    if (topic != Elements.FEATURE) throw new AnalyticsException("Tracking topic is not valid for the service provided.")
-	    
-	    appendFeature(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
+        val topics = List("feature")
+        if (topics.contains(subject)) {
+
+          val reqdata = data ++ appendFeature(params)
+          new ServiceRequest(service,task,reqdata.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
+	    }
 
 	  }
       case "decision" => {
 	    
-	    if (topic != Elements.FEATURE) throw new AnalyticsException("Tracking topic is not valid for the service provided.")
-	    
-	    appendFeature(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
+        val topics = List("feature")
+        if (topics.contains(subject)) {
+
+          val reqdata = data ++ appendFeature(params)
+          new ServiceRequest(service,task,reqdata.toMap) 
+         
+ 	    } else {
+	      throw new AnalyticsException("No <subject> found.")
+	    }
+
 
       }
       case "intent" => {
 	    
-	    topic match {	      
-
-	      case Elements.AMOUNT => {
+	    val topics = List("amount")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	        appendAmount(params,data)
-	        new ServiceRequest(service,"index:amount",data.toMap)  
-	        
-	      }
-	      
-	      case _ => throw new AnalyticsException("Tracking topic is not valid for the service provided.")
-	      
-	    }
+	    val reqdata = data ++ appendAmount(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
       
       }
 	  case "outlier" => {
 	    
-	    topic match {
+	    val topics = List("feature","product")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+	    
+	    if (subject == "feature") {
+
+	      val reqdata = data ++ appendFeature(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case Elements.FEATURE => {
+	    } else {
 	    
-	        appendFeature(params,data)
-	        new ServiceRequest(service,"index:feature",data.toMap)  
-	        
-	        
-	      }
-	      case Elements.SEQUENCE => {
-	    
-	        appendExtendedItem(params,data)
-	        new ServiceRequest(service,"index:sequence",data.toMap)  
-	        
-	      }
+	      val reqdata = data ++ appendProduct(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case _ => throw new AnalyticsException("Tracking topic is not valid for the service provided.")
-	    
 	    }
 	    
 	  }
 	  case "series" => {
 	    
-	    if (topic != Elements.ITEM) throw new AnalyticsException("Tracking topic is not valid for the service provided.")
+	    val topics = List("item")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    appendItem(params,data)
-	    new ServiceRequest(service,"index",data.toMap)  
-	  
-	  }
+	    val reqdata = data ++ appendItem(params)
+	    new ServiceRequest(service,task,reqdata.toMap)  
 
+	  }
 	  case "similarity" => {
 	    
-	    topic match {
+	    val topics = List("feature","sequence")
+	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
+	    
+	    if (subject == "feature") {
 
-	      case Elements.FEATURE => {
-	    
-	        appendFeature(params,data)
-	        new ServiceRequest(service,"index:feature",data.toMap)  
-	        
-	      }	
-	      case Elements.SEQUENCE => {
-	    
-	        appendItem(params,data)
-	        new ServiceRequest(service,"index:sequence",data.toMap)  
-	        
-	      }
+	      val reqdata = data ++ appendFeature(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
-	      case _ => throw new AnalyticsException("Tracking topic is not valid for the service provided.")
+	    } else {
+	    
+	      val reqdata = data ++ appendSequence(params)
+	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    }
 	    
@@ -157,15 +159,17 @@ class TrackRequestBuilder extends RequestBuilder {
   }
   
   /** Amount is used by Intent Recognition */
-  private def appendAmount(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendAmount(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
          
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "amount" -> params("amount").asInstanceOf[String]
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.AMOUNT_FIELD -> params(Names.AMOUNT_FIELD).asInstanceOf[String]
+      
+      data
       
     } catch {
       
@@ -177,41 +181,20 @@ class TrackRequestBuilder extends RequestBuilder {
 
   }
 
-  /** Item is used by Association Analysis **/
-  private def appendItem(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendItem(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
     try {
          
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
 
-      data += "item" -> params("item").asInstanceOf[String]
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      data += Names.SCORE_FIELD -> params(Names.SCORE_FIELD).asInstanceOf[String]
       
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
-  }
-  
-  private def appendExtendedItem(params:Map[String,Any],data:HashMap[String,String]) {
- 
-    try {
-         
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
-
-      data += "user" -> params("user").asInstanceOf[String]
-      data += "group" -> params("group").asInstanceOf[String]
-
-      data += "item" -> params("item").asInstanceOf[String]
-      data += "price" -> params("price").asInstanceOf[String]
+      data
       
     } catch {
       
@@ -223,12 +206,61 @@ class TrackRequestBuilder extends RequestBuilder {
 
   }
   
-  private def appendFeature(params:Map[String,Any],data:HashMap[String,String]) {
+  private def appendProduct(params:Map[String,Any]):HashMap[String,String] = {
  
+    val data = HashMap.empty[String,String]
+    try {
+         
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
+
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
+
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      data += Names.PRICE_FIELD -> params(Names.PRICE_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid topic description for the provided service.")
+      }
+    
+    }
+
+  }
+  
+  private def appendSequence(params:Map[String,Any]):HashMap[String,String] = {
+ 
+    val data = HashMap.empty[String,String]
+    try {
+         
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
+
+      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
+      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
+
+      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid topic description for the provided service.")
+      }
+    
+    }
+
+  }
+  
+  private def appendFeature(params:Map[String,Any]):HashMap[String,String] = {
+ 
+    val data = HashMap.empty[String,String]
     try {
     
-      data += "site" -> params("site").asInstanceOf[String]
-      data += "timestamp" -> params("timestamp").asInstanceOf[String]
+      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
  
       /* 
        * Restrict parameters to those that are relevant to feature description;
@@ -239,12 +271,12 @@ class TrackRequestBuilder extends RequestBuilder {
       for (rec <- records) {
       
         val (k,v) = rec
-        
-        val name = k.replace("lbl.","").replace("fea.","")
         data += k -> v.asInstanceOf[String]      
       
-    }
+      }
      
+      data
+      
     } catch {
       
       case e:Exception => {
