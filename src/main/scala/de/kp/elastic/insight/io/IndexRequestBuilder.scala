@@ -66,14 +66,8 @@ class IndexRequestBuilder extends RequestBuilder {
 	  
 	  case "context" => {
     
-        val topics = List("feature")
+        val topics = List("vector")
         if (topics.contains(subject)) {
-            
-          val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
-          data += Names.REQ_NAMES -> names.mkString(",")
-      
-          val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
-          data += Names.REQ_TYPES -> types.mkString(",")
 
           new ServiceRequest(service,task,data.toMap) 
          
@@ -102,7 +96,7 @@ class IndexRequestBuilder extends RequestBuilder {
       }
       case "intent" => {
 	    
-	    val topics = List("amount")
+	    val topics = List("state")
 	    if (topics.contains(subject)) {
 	      new ServiceRequest(service,task,data.toMap) 
 	      
@@ -146,18 +140,8 @@ class IndexRequestBuilder extends RequestBuilder {
 	  }
 	  case "similarity" => {
     
-        val topics = List("feature","sequence")
+        val topics = List("sequence","vector")
         if (topics.contains(subject)) {
-	    
-          if (subject == "feature") {
-            
-            val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
-            data += Names.REQ_NAMES -> names.mkString(",")
-      
-            val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
-            data += Names.REQ_TYPES -> types.mkString(",")
-
-          }
 
           new ServiceRequest(service,task,data.toMap) 
          

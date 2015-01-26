@@ -64,10 +64,10 @@ class TrackRequestBuilder extends RequestBuilder {
 	  
 	  case "context" => {
 	    
-        val topics = List("feature")
+        val topics = List("vector")
         if (topics.contains(subject)) {
 
-          val reqdata = data ++ appendFeature(params)
+          val reqdata = data ++ appendVector(params)
           new ServiceRequest(service,task,reqdata.toMap) 
          
  	    } else {
@@ -91,10 +91,10 @@ class TrackRequestBuilder extends RequestBuilder {
       }
       case "intent" => {
 	    
-	    val topics = List("amount")
+	    val topics = List("state")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    val reqdata = data ++ appendAmount(params)
+	    val reqdata = data ++ appendState(params)
 	    new ServiceRequest(service,task,reqdata.toMap)  
       
       }
@@ -127,17 +127,17 @@ class TrackRequestBuilder extends RequestBuilder {
 	  }
 	  case "similarity" => {
 	    
-	    val topics = List("feature","sequence")
+	    val topics = List("sequence","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
 	    if (subject == "feature") {
-
-	      val reqdata = data ++ appendFeature(params)
+	    
+	      val reqdata = data ++ appendSequence(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    } else {
 	    
-	      val reqdata = data ++ appendSequence(params)
+	      val reqdata = data ++ appendVector(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    }
@@ -158,8 +158,8 @@ class TrackRequestBuilder extends RequestBuilder {
     
   }
   
-  /** Amount is used by Intent Recognition */
-  private def appendAmount(params:Map[String,Any]):HashMap[String,String] = {
+  /** State is used by Intent Recognition */
+  private def appendState(params:Map[String,Any]):HashMap[String,String] = {
  
     val data = HashMap.empty[String,String]
     try {
@@ -167,7 +167,7 @@ class TrackRequestBuilder extends RequestBuilder {
       data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
 
       data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
-      data += Names.AMOUNT_FIELD -> params(Names.AMOUNT_FIELD).asInstanceOf[String]
+      data += Names.STATE_FIELD -> params(Names.STATE_FIELD).asInstanceOf[String]
       
       data
       
@@ -285,6 +285,28 @@ class TrackRequestBuilder extends RequestBuilder {
     
     }
     
+  }
+  private def appendVector(params:Map[String,Any]):HashMap[String,String] = {
+ 
+     val data = HashMap.empty[String,String]
+     try {
+         
+      data += Names.ROW_FIELD -> params(Names.ROW_FIELD).asInstanceOf[String]
+      data += Names.COL_FIELD -> params(Names.COL_FIELD).asInstanceOf[String]
+      
+      data += Names.LBL_FIELD -> params(Names.LBL_FIELD).asInstanceOf[String]
+      data += Names.VAL_FIELD -> params(Names.VAL_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid metadata description for the provided service.")
+      }
+    
+    }
+  
   }
  
 }

@@ -70,7 +70,7 @@ class StatusResponseBuilder extends ResponseBuilder {
         /* datatype */
         builder.field("task",entry.task)
         /* status */
-        builder.field("status",entry.status)      
+        builder.field("status",entry.value)      
         /* timestamp */
         builder.field("timestamp",entry.timestamp)      
         builder.endObject()

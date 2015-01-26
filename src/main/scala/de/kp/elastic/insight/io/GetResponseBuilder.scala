@@ -60,7 +60,7 @@ class GetResponseBuilder extends ResponseBuilder {
 	        addCRules(builder,response)
 	        
 	      } else {
-	        // TODO
+	        /* do nothing */
 	      }
 	      
 	    }
@@ -73,7 +73,7 @@ class GetResponseBuilder extends ResponseBuilder {
             builder.field("prediction",response)
 	      
 	      if (task == "similar") {
-	        // TODO
+	        /* not supported yet */
 	      }
 	    
 	    }
@@ -88,11 +88,8 @@ class GetResponseBuilder extends ResponseBuilder {
 	     */
 	    case Services.INTENT => {
 	    
-	      if (topic == "loyalty")
-	        addLoyalty(builder,response)
-	      
-	      if (topic == "purchase")
-	        addPurchase(builder,response)
+	      if (topic == "state")
+	        addStates(builder,response)
 	    
 	    }
 	    /*
@@ -127,12 +124,12 @@ class GetResponseBuilder extends ResponseBuilder {
          * Similarity Analysis
          */	  
 	    case Services.SIMILARITY => {
-	    
-	      if (topic == "feature")
-	        addFeatures(builder,response)
 	      
 	      if (topic == "sequence")
 	        addSequences(builder,response)
+	    
+	      if (topic == "vector")
+	        addVectors(builder,response)
 	      
 	    }
 	    /*
@@ -268,81 +265,6 @@ class GetResponseBuilder extends ResponseBuilder {
     
   }
   
-  private def appendItems(builder:XContentBuilder,relations:String) {
-     
-    val data = Serializer.deserializeMultiRelations(relations)
-
-    builder.startObject("result")
-	builder.field("total", data.items.size)
-	  
-	builder.startArray("data")    
-	for (weightedRules <- data.items) {
-
-	  builder.startObject()
-	  
-	  builder.field("site",weightedRules.site)
-	  builder.field("user",weightedRules.user)
-	  
-	  builder.startArray("rules")
-	  for (weightedRule <- weightedRules.items) {
-	    
-	    builder.startObject()
-
-	    /* items */
-	    builder.startArray("antecedent")
-	    weightedRule.antecedent.foreach(v => builder.value(v))
-	    builder.endArray()
-
-	    /* related */
-	    builder.startArray("consequent")
-	    weightedRule.consequent.foreach(v => builder.value(v))
-	    builder.endArray()
-	    
-	    /* relation parameters */
-	    builder.field("support",weightedRule.support)
-	    builder.field("confidence",weightedRule.confidence)
-	    
-	    builder.field("weight",weightedRule.weight)
-
-	    builder.endObject()
-	    
-	  }
-	
-	}
-	  
-    builder.endArray()	  
-	builder.endObject()
-
-  }
-  
-  private def addLoyalty(builder:XContentBuilder,loyalty:String) {
-    
-    val data = Serializer.deserializeBehavior(loyalty)
-
-	builder.field("total", data.items.size)
-	builder.startArray("data")    
-
-	for (record <- data.items) {
-      
-      builder.startObject()
-      
-	  /* site */
-      builder.field("site",record.site)
-      /* user */
-      builder.field("user",record.user)
-      /* states */
-      builder.startArray("states")
-      record.states.foreach(v => builder.value(v))
-      builder.endArray()
-      
-      builder.endObject
-	
-	}
-	  
-    builder.endArray()	  
-   
-  }
-  
   private def addCRules(builder:XContentBuilder,rules:String) {
      
     val data = Serializer.deserializeCRules(rules)
@@ -441,33 +363,6 @@ class GetResponseBuilder extends ResponseBuilder {
     
   }
   
-  private def addPurchase(builder:XContentBuilder,purchases:String) {
-    
-    val data = Serializer.deserializePurchases(purchases)
-    
-	builder.field("total", data.items.size)	
-	builder.startArray("data")	  
-	
-	for (record <- data.items) {
-	  
-	  builder.startObject()
-	  /* site */
-      builder.field("site",record.site)
-      /* user */
-      builder.field("user",record.user)
-	  /* timestamp */
-      builder.field("timestamp",record.timestamp)
-      /* amount */
-      builder.field("amount",record.amount)
-	  
-	  builder.endObject()
-	
-	}
-	          
-    builder.endArray()
-    
-  }
-  
   private def addSequences(builder:XContentBuilder,sequences:String) = {
    
     val data = Serializer.deserializeClusteredSequences(sequences)
@@ -506,6 +401,76 @@ class GetResponseBuilder extends ResponseBuilder {
 	  
     builder.endArray()	  
 
+  }
+  
+  private def addStates(builder:XContentBuilder,states:String) {
+    
+    val data = Serializer.deserializeMarkovRules(states)
+
+	builder.field("total", data.items.size)
+	builder.startArray("data")    
+
+	for (record <- data.items) {
+      
+      builder.startObject()
+      
+	  /* antecedent */
+      builder.field("antecedent",record.antecedent)
+
+      /* consequent */
+      builder.startArray("consequent")
+      for (state <- record.consequent) {
+      
+        builder.startObject
+        /* name */
+        builder.field("state",state.name)
+        /* score */
+        builder.field("score",state.probability)
+      
+      }
+      
+      builder.endArray()      
+      builder.endObject
+	
+	}
+	  
+    builder.endArray()	  
+   
+  }
+  
+  private def addVectors(builder:XContentBuilder,vectors:String) {
+    
+    val data = Serializer.deserializeClusteredPoints(vectors)
+
+	builder.field("total", data.items.size)
+	builder.startArray("data")    
+
+	for (record <- data.items) {
+      
+      builder.startObject()
+      /* cluster */
+      builder.field("cluster",record.cluster)
+      /* distance */
+      builder.field("distance",record.distance)
+      /* point */
+      builder.startObject("point")
+
+      /* label */
+      builder.field("label",record.point.label)
+      
+      /* features */
+      builder.startArray("features")
+      record.point.features.foreach(v => builder.value(v))
+      builder.endArray
+
+      builder.endObject()
+     
+      builder.endObject
+	
+	}
+	  
+    builder.endArray()	  
+   
   }
   
 }

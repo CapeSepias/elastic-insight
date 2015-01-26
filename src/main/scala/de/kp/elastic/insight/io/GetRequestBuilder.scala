@@ -49,20 +49,13 @@ class GetRequestBuilder extends RequestBuilder {
       
       case Services.ASSOCIATION => {
 
-        val topics = List("antecedent","consequent","crule","rule","transaction")
+        val topics = List("antecedent","consequent","crule","rule")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
         if (List("antecedent","consequent").contains(subject)) {
 
           val items = params("items").asInstanceOf[List[Int]]
           data += Names.REQ_ITEMS -> items.mkString(",")
-          
-        }
-        
-        if (List("transaction").contains(subject)) {
-
-          val users = params("users").asInstanceOf[List[String]]
-          data += Names.REQ_USERS -> users.mkString(",")
           
         }
         
@@ -83,7 +76,7 @@ class GetRequestBuilder extends RequestBuilder {
           val features = params("features").asInstanceOf[List[Double]]
           data += Names.REQ_FEATURES -> features.mkString(",")
           
-          val task = "predict:feature"
+          val task = "predict:vector"
           new ServiceRequest(service, task, data.toMap)
             
         } else {
@@ -106,7 +99,7 @@ class GetRequestBuilder extends RequestBuilder {
              
           }
           
-          val task = "similar:feature"
+          val task = "similar:vector"
           new ServiceRequest(service, task, data.toMap)
           
         }
@@ -127,23 +120,33 @@ class GetRequestBuilder extends RequestBuilder {
       }
       case Services.INTENT => {
 
-        val topics = List("loyalty","purchase")
+        val topics = List("state")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
-        val rawset = params("purchases").asInstanceOf[List[Map[String,Any]]]
-        val purchases = rawset.map(record => {
+        val steps = params(Names.REQ_STEPS).asInstanceOf[Int]
+        data += Names.REQ_STEPS -> steps.toString
+        
+        /*
+         * The Markov predictor is flexible with respect to the provided
+         * combination of request parameters: 
+         */
+        if (params.contains(Names.REQ_STATE)) {
+          /*
+           * A single (last) state is provided, and starting from this
+           * state a set of most probable next states is computed
+           */
+          val state = params(Names.REQ_STATE).asInstanceOf[String]
+          data += Names.REQ_STATE -> state
+        
+        } else if (params.contains(Names.REQ_STATES)) {
+          /*
+           * A list of (latest) states is provided, and for each state,
+           * a set of most probable next states is computed
+           */
+          val states = params(Names.REQ_STATES).asInstanceOf[List[String]]
+          data += Names.REQ_STATES -> states.mkString(",")
           
-          val site = record("site").asInstanceOf[String]
-          val user = record("user").asInstanceOf[String]
-
-          val timestamp = record("timestamp").asInstanceOf[Long]
-          val amount = record("amount").asInstanceOf[Float]
-
-          Purchase(site,user,timestamp,amount)
-          
-        })
-
-        data += "purchases" -> Serializer.serializePurchases(Purchases(purchases))
+        }
         
         val task = "get:" + subject
         new ServiceRequest(service, task, data.toMap)
@@ -176,7 +179,7 @@ class GetRequestBuilder extends RequestBuilder {
       }
       case Services.SIMILARITY => {
     
-        val topics = List("feature","sequence")
+        val topics = List("sequence","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
         
         val task = "get:" + subject

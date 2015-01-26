@@ -77,8 +77,6 @@ case class MultiRelations(items:List[WeightedRules])
 object ResponseStatus extends BaseStatus
 
 object Serializer extends BaseSerializer {
-  
-  def deserializeBehavior(behaviors:String):Behaviors = read[Behaviors](behaviors)
 
   /*
    * Clustered points specify the result of the similarity analysis
