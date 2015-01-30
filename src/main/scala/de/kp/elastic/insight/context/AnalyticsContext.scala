@@ -18,6 +18,8 @@ package de.kp.elastic.insight.context
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import akka.actor.ActorSystem
+
 import de.kp.elastic.insight.RemoteClient
 import de.kp.elastic.insight.model._
 
@@ -29,12 +31,13 @@ import scala.concurrent.Future
 
 object AnalyticsContext {
 
- private val clientPool = HashMap.empty[String,RemoteClient]
+  protected val clientPool = HashMap.empty[String,RemoteClient]
+  protected val system = ActorSystem("AnalyticsSystem")
  
   def send(service:String,message:String):Future[Any] = {
    
     if (clientPool.contains(service) == false) {
-      clientPool += service -> new RemoteClient(service)      
+      clientPool += service -> new RemoteClient(system,service)      
     }
           
     println("AnalyticsContext: send request to remote service.")

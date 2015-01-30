@@ -29,7 +29,7 @@ import scala.concurrent.duration.DurationInt
 
 import scala.concurrent.Future
 
-class RemoteClient(service:String) {
+class RemoteClient(system:ActorSystem,service:String) {
 
   private val path = "client.conf"    
   private val conf = ConfigFactory.load(path)
@@ -38,11 +38,8 @@ class RemoteClient(service:String) {
   implicit val timeout = Timeout(DurationInt(duration).second)
   
   private val url = Registry.get(service)
-    
-  private val system = ActorSystem(service, conf)
   private val remote = system.actorSelection(url)
 
   def send(req:Any):Future[Any] = ask(remote, req)    
-  def shutdown() = system.shutdown
 
 }
