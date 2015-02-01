@@ -97,11 +97,11 @@ class GetResponseBuilder extends ResponseBuilder {
 	     */
 	    case Services.OUTLIER => {
 	      
-	      if (topic == "featue") {
-	        addFDetection(builder,response)
+	      if (topic == "product") {
+	        addBDetection(builder,response)
 
 	      } else {
-	        addBDetection(builder,response)
+	        addFOutlier(builder,response)
 	        
 	      }
 
@@ -195,9 +195,9 @@ class GetResponseBuilder extends ResponseBuilder {
    
   }
   
-  private def addFDetection(builder:XContentBuilder,detection:String) = {
+  private def addFOutlier(builder:XContentBuilder,outliers:String) = {
      
-    val data = Serializer.deserializeFDetections(detection)
+    val data = Serializer.deserializeFOutliers(outliers)
 
 	builder.field("total", data.items.size)	  
 	builder.startArray("data")    
@@ -206,20 +206,12 @@ class GetResponseBuilder extends ResponseBuilder {
       
       builder.startObject()
       /* distance */
-      builder.field("distance",record.distance)
+      builder.field("distance",record._1)
       /* label */
-      builder.field("label",record.label)
+      builder.field("label",record._2.label)
       /* features */
       builder.startArray("features")
-      for (feature <- record.features) {
-        builder.startObject()
-        
-        builder.field("field",feature.field)
-        builder.field("value",feature.value)
-        
-        builder.endObject()
-      }
-      
+      record._2.features.foreach(v => builder.value(v))
       builder.endArray()
       
       builder.endObject()

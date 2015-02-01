@@ -42,11 +42,6 @@ case class ClusteredSequence(
 case class ClusteredSequences(items:List[ClusteredSequence])
 
 case class FField(field:String,value:Double)
-
-case class FDetection(
-  distance:Double,label:String,features:List[FField])
-
-case class FDetections(items:List[FDetection])
   
 case class BDetection(
   site:String,user:String,states:List[String],metric:Double,flag:String)
@@ -54,8 +49,12 @@ case class BDetection(
 case class BDetections(items:List[BDetection])
 
 case class LabeledPoint(
-  label:String,features:Array[Double]
+  id:Long,label:String,features:Array[Double]
 )
+
+case class BOutliers(items:List[(String,String,List[String],Double,String)])
+
+case class FOutliers(items:List[(Double,LabeledPoint)])
 
 case class NumberedSequence(sid:Int,data:Array[Array[Int]])
 
@@ -87,7 +86,7 @@ object Serializer extends BaseSerializer {
   def deserializeClusteredSequences(sequences:String):ClusteredSequences = read[ClusteredSequences](sequences)
 
   def deserializeBDetections(detections:String):BDetections = read[BDetections](detections)
-  def deserializeFDetections(detections:String):FDetections = read[FDetections](detections)
+  def deserializeFOutliers(outliers:String):FOutliers = read[FOutliers](outliers)
  
   def deserializeMultiRelations(relations:String):MultiRelations = read[MultiRelations](relations)
    

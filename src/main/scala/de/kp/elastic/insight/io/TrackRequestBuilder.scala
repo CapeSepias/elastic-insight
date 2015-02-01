@@ -100,17 +100,17 @@ class TrackRequestBuilder extends RequestBuilder {
       }
 	  case "outlier" => {
 	    
-	    val topics = List("feature","product")
+	    val topics = List("product","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    if (subject == "feature") {
+	    if (subject == "product") {
 
-	      val reqdata = data ++ appendFeature(params)
+	      val reqdata = data ++ appendProduct(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    } else {
 	    
-	      val reqdata = data ++ appendProduct(params)
+	      val reqdata = data ++ appendVector(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    }

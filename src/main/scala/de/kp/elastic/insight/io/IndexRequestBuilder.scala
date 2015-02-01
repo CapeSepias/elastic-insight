@@ -107,18 +107,8 @@ class IndexRequestBuilder extends RequestBuilder {
       }
 	  case "outlier" => {
    
-        val topics = List("feature","product")
+        val topics = List("product","vector")
         if (topics.contains(subject)) {
-	    
-          if (subject == "feature") {
-            
-            val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
-            data += Names.REQ_NAMES -> names.mkString(",")
-      
-            val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
-            data += Names.REQ_TYPES -> types.mkString(",")
-
-          }
 
           new ServiceRequest(service,task,data.toMap) 
          
