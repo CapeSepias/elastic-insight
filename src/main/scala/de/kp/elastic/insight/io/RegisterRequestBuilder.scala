@@ -59,10 +59,10 @@ class RegisterRequestBuilder extends RequestBuilder {
 	  
 	  case "context" => {
 	    
-	    val topics = List("vector")
+	    val topics = List("point")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
-        val reqdata = data ++ appendMetaVector(params)
+        val reqdata = data ++ appendMetaPoint(params)
 	    new ServiceRequest(service,task,reqdata.toMap)  
 
 	  }
@@ -86,17 +86,17 @@ class RegisterRequestBuilder extends RequestBuilder {
       }
 	  case "outlier" => {
 	    
-	    val topics = List("feature","product")
+	    val topics = List("state","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    if (subject == "feature") {
+	    if (subject == "state") {
 
-	      val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+	      val reqdata = data ++ appendMetaState(params) ++ appendMetaTypes(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    } else {
 	    
-	      val reqdata = data ++ appendMetaProduct(params)
+	      val reqdata = data ++ appendMetaVector(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    }
@@ -281,6 +281,29 @@ class RegisterRequestBuilder extends RequestBuilder {
     }
 
   }
+  private def appendMetaPoint(params:Map[String,Any]):HashMap[String,String] = {
+ 
+     val data = HashMap.empty[String,String]
+     try {
+         
+      data += Names.ROW_FIELD -> params(Names.ROW_FIELD).asInstanceOf[String]
+      data += Names.COL_FIELD -> params(Names.COL_FIELD).asInstanceOf[String]
+      
+      data += Names.CAT_FIELD -> params(Names.CAT_FIELD).asInstanceOf[String]
+      data += Names.VAL_FIELD -> params(Names.VAL_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid metadata description for the provided service.")
+      }
+    
+    }
+  
+  }
+  
   private def appendMetaVector(params:Map[String,Any]):HashMap[String,String] = {
  
      val data = HashMap.empty[String,String]

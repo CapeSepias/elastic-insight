@@ -64,10 +64,10 @@ class TrackRequestBuilder extends RequestBuilder {
 	  
 	  case "context" => {
 	    
-        val topics = List("vector")
+        val topics = List("point")
         if (topics.contains(subject)) {
 
-          val reqdata = data ++ appendVector(params)
+          val reqdata = data ++ appendPoint(params)
           new ServiceRequest(service,task,reqdata.toMap) 
          
  	    } else {
@@ -100,12 +100,12 @@ class TrackRequestBuilder extends RequestBuilder {
       }
 	  case "outlier" => {
 	    
-	    val topics = List("product","vector")
+	    val topics = List("state","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    if (subject == "product") {
+	    if (subject == "state") {
 
-	      val reqdata = data ++ appendProduct(params)
+	      val reqdata = data ++ appendVector(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    } else {
@@ -118,10 +118,10 @@ class TrackRequestBuilder extends RequestBuilder {
 	  }
 	  case "series" => {
 	    
-	    val topics = List("item")
+	    val topics = List("sequence")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    val reqdata = data ++ appendItem(params)
+	    val reqdata = data ++ appendSequence(params)
 	    new ServiceRequest(service,task,reqdata.toMap)  
 
 	  }
@@ -130,7 +130,7 @@ class TrackRequestBuilder extends RequestBuilder {
 	    val topics = List("sequence","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
-	    if (subject == "feature") {
+	    if (subject == "sequence") {
 	    
 	      val reqdata = data ++ appendSequence(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
@@ -206,31 +206,6 @@ class TrackRequestBuilder extends RequestBuilder {
 
   }
   
-  private def appendProduct(params:Map[String,Any]):HashMap[String,String] = {
- 
-    val data = HashMap.empty[String,String]
-    try {
-         
-      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
-
-      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
-      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
-
-      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
-      data += Names.PRICE_FIELD -> params(Names.PRICE_FIELD).asInstanceOf[String]
-      
-      data
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-
-  }
-  
   private def appendSequence(params:Map[String,Any]):HashMap[String,String] = {
  
     val data = HashMap.empty[String,String]
@@ -286,6 +261,29 @@ class TrackRequestBuilder extends RequestBuilder {
     }
     
   }
+  private def appendPoint(params:Map[String,Any]):HashMap[String,String] = {
+ 
+     val data = HashMap.empty[String,String]
+     try {
+         
+      data += Names.ROW_FIELD -> params(Names.ROW_FIELD).asInstanceOf[String]
+      data += Names.COL_FIELD -> params(Names.COL_FIELD).asInstanceOf[String]
+      
+      data += Names.CAT_FIELD -> params(Names.CAT_FIELD).asInstanceOf[String]
+      data += Names.VAL_FIELD -> params(Names.VAL_FIELD).asInstanceOf[String]
+      
+      data
+      
+    } catch {
+      
+      case e:Exception => {
+        throw new AnalyticsException("Invalid metadata description for the provided service.")
+      }
+    
+    }
+  
+  }
+  
   private def appendVector(params:Map[String,Any]):HashMap[String,String] = {
  
      val data = HashMap.empty[String,String]

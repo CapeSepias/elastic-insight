@@ -66,7 +66,7 @@ class IndexRequestBuilder extends RequestBuilder {
 	  
 	  case "context" => {
     
-        val topics = List("vector")
+        val topics = List("point")
         if (topics.contains(subject)) {
 
           new ServiceRequest(service,task,data.toMap) 
@@ -107,7 +107,7 @@ class IndexRequestBuilder extends RequestBuilder {
       }
 	  case "outlier" => {
    
-        val topics = List("product","vector")
+        val topics = List("state","vector")
         if (topics.contains(subject)) {
 
           new ServiceRequest(service,task,data.toMap) 
