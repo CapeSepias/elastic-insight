@@ -78,14 +78,8 @@ class IndexRequestBuilder extends RequestBuilder {
 	  }
       case "decision" => {
     
-        val topics = List("feature")
+        val topics = List("point")
         if (topics.contains(subject)) {
-            
-          val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
-          data += Names.REQ_NAMES -> names.mkString(",")
-      
-          val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
-          data += Names.REQ_TYPES -> types.mkString(",")
 
           new ServiceRequest(service,task,data.toMap) 
          
@@ -119,7 +113,7 @@ class IndexRequestBuilder extends RequestBuilder {
 	  }
 	  case "series" => {
 	    
-	    val topics = List("item","rule")
+	    val topics = List("rule","sequence")
 	    if (topics.contains(subject)) {
 	      new ServiceRequest(service,task,data.toMap) 
 	      

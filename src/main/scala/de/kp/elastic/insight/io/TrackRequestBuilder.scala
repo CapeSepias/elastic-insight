@@ -60,8 +60,7 @@ class TrackRequestBuilder extends RequestBuilder {
 	    val reqdata = data ++ appendItem(params)
 	    new ServiceRequest(service,task,reqdata.toMap)  
 	  
-	  }
-	  
+	  }	  
 	  case "context" => {
 	    
         val topics = List("point")
@@ -77,10 +76,10 @@ class TrackRequestBuilder extends RequestBuilder {
 	  }
       case "decision" => {
 	    
-        val topics = List("feature")
+        val topics = List("point")
         if (topics.contains(subject)) {
 
-          val reqdata = data ++ appendFeature(params)
+          val reqdata = data ++ appendPoint(params)
           new ServiceRequest(service,task,reqdata.toMap) 
          
  	    } else {
@@ -229,38 +228,7 @@ class TrackRequestBuilder extends RequestBuilder {
     }
 
   }
-  
-  private def appendFeature(params:Map[String,Any]):HashMap[String,String] = {
- 
-    val data = HashMap.empty[String,String]
-    try {
-    
-      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
- 
-      /* 
-       * Restrict parameters to those that are relevant to feature description;
-       * note, that we use a flat JSON data structure for simplicity and distinguish
-       * field semantics by different prefixes 
-       */
-      val records = params.filter(kv => kv._1.startsWith("lbl.") || kv._1.startsWith("fea."))
-      for (rec <- records) {
-      
-        val (k,v) = rec
-        data += k -> v.asInstanceOf[String]      
-      
-      }
-     
-      data
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid topic description for the provided service.")
-      }
-    
-    }
-    
-  }
+
   private def appendPoint(params:Map[String,Any]):HashMap[String,String] = {
  
      val data = HashMap.empty[String,String]

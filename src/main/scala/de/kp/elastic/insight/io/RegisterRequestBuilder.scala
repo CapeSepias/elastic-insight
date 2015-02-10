@@ -68,10 +68,10 @@ class RegisterRequestBuilder extends RequestBuilder {
 	  }
       case "decision" => {
 	    
-	    val topics = List("feature")
+	    val topics = List("point")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 
-        val reqdata = data ++ appendMetaNames(params) ++ appendMetaTypes(params)
+        val reqdata = data ++ appendMetaPoint(params)
 	    new ServiceRequest(service,task,reqdata.toMap)  
 
      }
@@ -91,7 +91,7 @@ class RegisterRequestBuilder extends RequestBuilder {
 	    
 	    if (subject == "state") {
 
-	      val reqdata = data ++ appendMetaState(params) ++ appendMetaTypes(params)
+	      val reqdata = data ++ appendMetaState(params)
 	      new ServiceRequest(service,task,reqdata.toMap)  
 	      
 	    } else {
@@ -104,7 +104,7 @@ class RegisterRequestBuilder extends RequestBuilder {
 	  }
 	  case "series" => {
 	    
-	    val topics = List("item")
+	    val topics = List("sequence")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
 	    
 	    val reqdata = data ++ appendMetaItem(params)
@@ -191,31 +191,6 @@ class RegisterRequestBuilder extends RequestBuilder {
     }
 
   }
-	        
-  private def appendMetaProduct(params:Map[String,Any]):HashMap[String,String] = {
- 
-    val data = HashMap.empty[String,String]
-    try {
-         
-      data += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD).asInstanceOf[String]
-
-      data += Names.USER_FIELD -> params(Names.USER_FIELD).asInstanceOf[String]
-      data += Names.GROUP_FIELD -> params(Names.GROUP_FIELD).asInstanceOf[String]
-
-      data += Names.ITEM_FIELD -> params(Names.ITEM_FIELD).asInstanceOf[String]
-      data += Names.PRICE_FIELD -> params(Names.PRICE_FIELD).asInstanceOf[String]
-      
-      data
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid metadata description for the provided service.")
-      }
-    
-    }
-
-  }
 
   private def appendMetaSequence(params:Map[String,Any]):HashMap[String,String] = {
  
@@ -241,46 +216,7 @@ class RegisterRequestBuilder extends RequestBuilder {
     }
   
   }
-  
-  private def appendMetaNames(params:Map[String,Any]):HashMap[String,String] = {
- 
-    val data = HashMap.empty[String,String]
-    try {
-              
-      val names = params(Names.REQ_NAMES).asInstanceOf[List[String]]
-      data += Names.REQ_NAMES -> names.mkString(",")
-      
-      data
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid metadata description for the provided service.")
-      }
-    
-    }
 
-  }
- 
-  private def appendMetaTypes(params:Map[String,Any]):HashMap[String,String] = {
- 
-    val data = HashMap.empty[String,String]
-    try {
-              
-      val types = params(Names.REQ_TYPES).asInstanceOf[List[String]]
-      data += Names.REQ_TYPES -> types.mkString(",")
-      
-      data
-      
-    } catch {
-      
-      case e:Exception => {
-        throw new AnalyticsException("Invalid metadata description for the provided service.")
-      }
-    
-    }
-
-  }
   private def appendMetaPoint(params:Map[String,Any]):HashMap[String,String] = {
  
      val data = HashMap.empty[String,String]
