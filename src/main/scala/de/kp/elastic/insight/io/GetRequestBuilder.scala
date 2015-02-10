@@ -154,7 +154,7 @@ class GetRequestBuilder extends RequestBuilder {
       }
       case Services.OUTLIER => {
 
-        val topics = List("product","vector")
+        val topics = List("state","vector")
 	    if (topics.contains(subject) == false) throw new AnalyticsException("No <subject> found.")
         
         val task = "get:" + subject
