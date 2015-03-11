@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io._
 
-class IndexAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+class IndexAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings, client) {
 
   logger.info("Add IndexAction module")  
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/index/{service}/{subject}", this)

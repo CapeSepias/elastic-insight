@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io._
 
-class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
+class TrainAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings,client) {
 
   logger.info("Add TrainAction module")
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/train/{service}", this)

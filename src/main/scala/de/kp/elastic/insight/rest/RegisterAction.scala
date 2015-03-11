@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io._
 
-class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+class RegisterAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings, client) {
 
   logger.info("Add RegisterAction module") 
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/register/{service}/{subject}", this)

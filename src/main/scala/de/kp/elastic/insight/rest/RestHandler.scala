@@ -42,7 +42,7 @@ import scala.collection.mutable.HashMap
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class InsightRestHandler(settings:Settings,client:Client) extends BaseRestHandler(settings, client) {
+abstract class RestHandler(settings:Settings,client:Client) extends BaseRestHandler(settings, client) {
 
   protected def executeRequest(request:RestRequest,channel:RestChannel,requestBuilder:RequestBuilder,responseBuilder:ResponseBuilder) {
   

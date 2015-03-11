@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io.{GetRequestBuilder,GetResponseBuilder}
 
-class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+class GetAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings, client) {
 
   logger.info("Add GetAction module")  
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/get/{service}/{subject}", this)

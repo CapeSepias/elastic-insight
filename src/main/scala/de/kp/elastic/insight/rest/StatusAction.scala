@@ -33,7 +33,7 @@ import de.kp.elastic.insight.io.{StatusRequestBuilder,StatusResponseBuilder}
  * the status is held in a Redis instance and is not part of
  * the search index
  */
-class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
+class StatusAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings,client) {
 
   logger.info("Add StatusAction module")
   controller.registerHandler(RestRequest.Method.GET,"/_analytics/status/{service}/{subject}", this)

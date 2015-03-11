@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io._
 
-class FieldAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings, client) {
+class FieldAction @Inject()(settings:Settings,client:Client,controller:RestController) extends RestHandler(settings, client) {
 
   logger.info("Add FieldAction module")  
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/fields/{service}", this)

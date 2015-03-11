@@ -26,26 +26,15 @@ import org.elasticsearch.common.settings.Settings
 
 import de.kp.elastic.insight.io._
 
-class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends InsightRestHandler(settings,client) {
+class TrackAction @Inject()(settings:Settings,client:Client,controller:RestController) extends TrackHandler(settings,client) {
 
   logger.info("Add TrackAction module")
   controller.registerHandler(RestRequest.Method.POST,"/_analytics/track/{service}/{subject}", this)
-
-  private val requestBuilder  = new TrackRequestBuilder()
-  private val responseBuilder = new SimpleResponseBuilder()
   
   override protected def handleRequest(request:RestRequest,channel:RestChannel,client:Client) {
 
-    try {
-
-      logger.info("TrackAction: Request received")
-      executeRequest(request,channel,requestBuilder,responseBuilder)
-      
-    } catch {
-      
-      case e:Exception => onError(channel,e)
-       
-    }
+    logger.info("TrackAction: Request received")
+    executeRequest(request,channel)
     
   }
 
